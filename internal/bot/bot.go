@@ -5,6 +5,7 @@ import (
 	"alise-go/internal/config"
 	"alise-go/internal/data"
 	"alise-go/internal/models"
+	"alise-go/internal/services"
 	"context"
 	"log"
 	"os"
@@ -19,6 +20,7 @@ type Bot struct {
 	reg   *commands.Registery
 	cfg   config.Config
 	store *data.Store
+	hnm   *services.HNMService
 }
 
 func New(cfg config.Config) (*Bot, error) {
@@ -31,7 +33,6 @@ func New(cfg config.Config) (*Bot, error) {
 	if err != nil {
 		return nil, err
 	}
-	// store := &data.Store{DB: db}
 
 	reg := commands.NewRegistry()
 
@@ -82,6 +83,8 @@ func New(cfg config.Config) (*Bot, error) {
 
 	reg.Register(hnmCmd)
 
+	b.hnm = services.NewHNMService(store, cfg, dg)
+
 	dg.Identify.Intents = discordgo.IntentGuilds
 
 	return b, nil
@@ -115,7 +118,11 @@ func (b *Bot) Start(ctx context.Context) error {
 		return err
 	}
 
+	stop := make(chan struct{})
+	b.hnm.StartPolling(stop)
+
 	<-waitForSignal(ctx)
+	close(stop)
 
 	return nil
 }

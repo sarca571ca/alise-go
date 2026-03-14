@@ -1,7 +1,6 @@
 package commands
 
 import (
-	"log"
 	"strings"
 	"time"
 
@@ -10,7 +9,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
-type HNMCommand struct{}
+type HNMParsedHandler func(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+	timer models.HNMTimer,
+)
+
+type HNMCommand struct {
+	OnParsed HNMParsedHandler
+}
 
 func (HNMCommand) Name() string        { return "hnm" }
 func (HNMCommand) Description() string { return "Make a camp timer." }
@@ -58,7 +65,7 @@ func (HNMCommand) SlashDef() *discordgo.ApplicationCommand {
 	}
 }
 
-func (HNMCommand) HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (cmd HNMCommand) HandleInteraction(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.ApplicationCommandData()
 
 	// HNM Name
@@ -107,11 +114,13 @@ func (HNMCommand) HandleInteraction(s *discordgo.Session, i *discordgo.Interacti
 	if err != nil {
 		return
 	}
-	hnmTimerWindows := models.BuildHNMTimerWindows(hnmTimer)
-	log.Println(hnmTimerWindows)
+	// hnmTimerWindows := models.BuildHNMTimerWindows(hnmTimer)
+	// log.Println(hnmTimerWindows)
+
+	cmd.OnParsed(s, i, hnmTimer)
 }
 
-func (HNMCommand) HandleAutoCompleteCommand(
+func (cmd HNMCommand) HandleAutoCompleteCommand(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	focused *discordgo.ApplicationCommandInteractionDataOption,

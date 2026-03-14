@@ -4,6 +4,7 @@ import (
 	"alise-go/internal/commands"
 	"alise-go/internal/config"
 	"alise-go/internal/data"
+	"alise-go/internal/models"
 	"context"
 	"log"
 	"os"
@@ -26,12 +27,63 @@ func New(cfg config.Config) (*Bot, error) {
 		return nil, err
 	}
 
+	store, err := data.NewStore("alise.db")
+	if err != nil {
+		return nil, err
+	}
+	// store := &data.Store{DB: db}
+
 	reg := commands.NewRegistry()
-	reg.Register(commands.HNMCommand{})
+
+	b := &Bot{dg: dg, reg: reg, cfg: cfg, store: store}
+
+	hnmCmd := commands.HNMCommand{
+		OnParsed: func(s *discordgo.Session, i *discordgo.InteractionCreate, timer models.HNMTimer) {
+			guildID := i.GuildID
+			channelID := cfg.Channels.HNMTimes
+
+			rec := data.NewRecordFromHNMTimer(guildID, channelID, timer)
+
+			if _, err := b.store.UpsertHNMTimerRecord(rec); err != nil {
+				respondError(s, i, "Failed to save timer")
+				return
+			}
+
+			recs, err := store.ListHNMTimerRecords(guildID, channelID)
+			if err != nil {
+				respondError(s, i, "Failed to load timers")
+			}
+
+			var timers []models.HNMTimer
+			for _, r := range recs {
+				hnm, ok := models.GetHNM(r.HNMID)
+				if !ok {
+					continue
+				}
+				timers = append(timers, data.NewTimerFromRecord(r, hnm))
+			}
+
+			if err := b.updateHNMTimerBoard(guildID, timers); err != nil {
+				respondError(s, i, "Failed to update timer board")
+				return
+			}
+
+			content := formatHNMTimersPlain(timers)
+
+			_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: content,
+				},
+			},
+			)
+		},
+	}
+
+	reg.Register(hnmCmd)
 
 	dg.Identify.Intents = discordgo.IntentGuilds
 
-	b := &Bot{dg: dg, reg: reg, cfg: cfg}
 	return b, nil
 }
 

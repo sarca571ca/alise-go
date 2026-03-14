@@ -172,5 +172,36 @@ func (s *Store) ListHNMTimerRecords(guildID, channelID string) ([]HNMTimerRecord
 	return out, rows.Err()
 }
 
-func (s *Store) GetHNMTimerBoard(guildID, channelID string) (HNMTimerBoard, bool, error)
-func (s *Store) UpsertHNMTimerBoard(board HNMTimerBoard) error
+func (s *Store) GetHNMTimerBoard(guildID, channelID string) (HNMTimerBoard, bool, error) {
+	const q = `
+	SELECT guild_id, channel_id, message_id
+	FROM hnm_timer_boards
+	WHERE guild_id = ? AND channel_id = ?
+	`
+
+	var board HNMTimerBoard
+	err := s.DB.QueryRow(q, guildID, channelID).Scan(
+		&board.GuildID,
+		&board.ChannelID,
+		&board.MessageID,
+	)
+	if err == sql.ErrNoRows {
+		return HNMTimerBoard{}, false, nil
+	}
+	if err != nil {
+		return HNMTimerBoard{}, false, err
+	}
+	return board, true, nil
+}
+
+func (s *Store) UpsertHNMTimerBoard(board HNMTimerBoard) error {
+	const q = `
+	INSERT INTO hnm_timer_boards (guild_id, channel_id, message_id)
+	VALUES (?, ?, ?)
+	ON CONFLICT(guild_id, channel_id) DO UPDATE SET
+		message_id = excluded.message_id
+	`
+
+	_, err := s.DB.Exec(q, board.GuildID, board.ChannelID, board.MessageID)
+	return err
+}

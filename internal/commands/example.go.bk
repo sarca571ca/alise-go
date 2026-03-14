@@ -1,0 +1,95 @@
+func (r *Registery) handleComponentInteractions(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	// data := i.MessageComponentData()
+	//
+	// switch data.CustomID {
+	// case hnmSelectCustomID, modSelectCustomID:
+	// 	modal := &discordgo.InteractionResponse{
+	// 		Type: discordgo.InteractionResponseModal,
+	// 		Data: &discordgo.InteractionResponseData{
+	// 			CustomID: hnmModalCustomID,
+	// 			Title:    "HNM Time",
+	// 			Components: []discordgo.MessageComponent{
+	//
+	// 				discordgo.ActionsRow{
+	// 					Components: []discordgo.MessageComponent{
+	// 						discordgo.TextInput{
+	// 							CustomID:    dayInputCustomID,
+	// 							Label:       "Days since HQ Spawn, 0 if it never spawns HQ",
+	// 							Style:       discordgo.TextInputShort,
+	// 							Placeholder: "0",
+	// 							Required:    true,
+	// 						},
+	// 					},
+	// 				},
+	// 				discordgo.ActionsRow{
+	// 					Components: []discordgo.MessageComponent{
+	// 						discordgo.TextInput{
+	// 							CustomID:    dateInputCustomID,
+	// 							Label:       "Date (eg. 20260101 or 20261030)",
+	// 							Style:       discordgo.TextInputShort,
+	// 							Placeholder: "", // TODO: Make this todays date
+	// 							Required:    true,
+	// 						},
+	// 					},
+	// 				},
+	// 				discordgo.ActionsRow{
+	// 					Components: []discordgo.MessageComponent{
+	// 						discordgo.TextInput{
+	// 							CustomID:    timeInputCustomID,
+	// 							Label:       "Time (eg. 2030 or 0600)",
+	// 							Style:       discordgo.TextInputShort,
+	// 							Placeholder: "",
+	// 							Required:    true,
+	// 						},
+	// 					},
+	// 				},
+	// 			},
+	// 		},
+	// 	}
+	//
+	// 	if err := s.InteractionRespond(i.Interaction, modal); err != nil {
+	// 		log.Println("Error in respond modal:", err.Error())
+	// 	}
+	// }
+}
+
+func (r *Registery) handleModalSubmit(s *discordgo.Session, i *discordgo.InteractionCreate) {
+	// if i.ModalSubmitData().CustomID != hnmModalCustomID {
+	// 	return
+	// }
+	//
+	// var dayVal, dateVal, timeVal string
+	//
+	// for _, row := range i.ModalSubmitData().Components {
+	// 	ar, ok := row.(discordgo.ActionsRow)
+	// 	if !ok {
+	// 		continue
+	// 	}
+	// 	for _, comp := range ar.Components {
+	// 		ti, ok := comp.(discordgo.TextInput)
+	// 		if !ok {
+	// 			continue
+	// 		}
+	// 		switch ti.CustomID {
+	// 		case dayInputCustomID:
+	// 			dayVal = ti.Value
+	// 		case dateInputCustomID:
+	// 			dateVal = ti.Value
+	// 		case timeInputCustomID:
+	// 			timeVal = ti.Value
+	// 		}
+	// 	}
+	// }
+	//
+	// content := "Received HNM data:\n" + "```day: " + dayVal + "\ndate: " + dateVal +
+	// 	"\ntime: " + timeVal + "```"
+	//
+	// if err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+	// 	Type: discordgo.InteractionResponseChannelMessageWithSource,
+	// 	Data: &discordgo.InteractionResponseData{
+	// 		Content: content,
+	// 	},
+	// }); err != nil {
+	// 	log.Println("Error sending content:", err.Error())
+	// }
+}

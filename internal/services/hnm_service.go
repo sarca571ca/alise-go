@@ -26,20 +26,38 @@ func NewHNMService(store *data.Store, cfg config.Config, dg *discordgo.Session) 
 }
 
 func (s *HNMService) StartPolling(stop <-chan struct{}) {
-	ticker := time.NewTicker(1 * time.Minute)
 	go func() {
-		defer ticker.Stop()
 		for {
+			now := time.Now()
+			next := now.Truncate(time.Second).Add(time.Second)
 			select {
-			case <-ticker.C:
+			case <-time.After(time.Until(next)):
 				s.tickCamps()
 				s.checkTimers()
+				s.tickCampWindows()
 			case <-stop:
 				return
 			}
 		}
 	}()
 }
+
+// func (s *HNMService) StartPolling(stop <-chan struct{}) {
+// 	ticker := time.NewTicker(1 * time.Minute)
+// 	go func() {
+// 		defer ticker.Stop()
+// 		for {
+// 			select {
+// 			case <-ticker.C:
+// 				s.tickCamps()
+// 				s.checkTimers()
+// 				s.tickCampWindows()
+// 			case <-stop:
+// 				return
+// 			}
+// 		}
+// 	}()
+// }
 
 func (s *HNMService) checkTimers() {
 	guildID := s.cfg.GuildID
@@ -125,8 +143,9 @@ func (s *HNMService) tickCamps() {
 		windows := models.BuildHNMTimerWindows(timer)
 
 		firstWindow := windows.NextRespawn
+		lastWindow := windows.Windows[len(windows.Windows)-1]
 
-		if !now.Before(firstWindow) {
+		if !now.Before(lastWindow) {
 			continue
 		}
 
@@ -144,7 +163,6 @@ func (s *HNMService) tickCamps() {
 			continue
 		}
 		if found && camp.ChannelID != "" {
-			// Camp channel already exists for this kill.
 			continue
 		}
 
@@ -183,8 +201,93 @@ func (s *HNMService) tickCamps() {
 			IsEnraged:     false,
 			LastWindowIdx: 0,
 		}
-		log.Printf("existingToday for %s: found=%+v, channelID=%q\n", hnm.ID, found, camp.ChannelID)
 
-		_, _ = s.store.UpsertHNMCampChannel(chRecord)
+		if _, err = s.store.UpsertHNMCampChannel(chRecord); err != nil {
+			log.Println("UpsertHNMCampChannel error:", err)
+		}
+	}
+}
+
+func (s *HNMService) tickCampWindows() {
+	guildID := s.cfg.GuildID
+	if guildID == "" {
+		log.Println("No guildID")
+		return
+	}
+
+	camps, err := s.store.ListHNMCampChannels(guildID)
+	if err != nil {
+		log.Println("Error:", err)
+		return
+	}
+
+	now := time.Now()
+	log.Printf("tickCampWindows: %d camps at %s\n", len(camps), now.Format(time.RFC3339))
+
+	for _, camp := range camps {
+		if camp.IsClosed {
+			continue
+		}
+
+		hnm, ok := models.GetHNM(camp.HNMID)
+		if !ok {
+			continue
+		}
+
+		timer := data.NewTimerFromRecord(
+			data.HNMTimerRecord{
+				LastKill:    camp.LastKill,
+				DaysSinceHQ: camp.DaysSinceHQ,
+			},
+			hnm,
+		)
+
+		wins := models.BuildHNMTimerWindows(timer)
+		if len(wins.Windows) == 0 {
+			continue
+		}
+
+		lastWin := wins.Windows[len(wins.Windows)-1]
+
+		// If we've already scheduled a move, nothing more to do here.
+		if camp.MoveScheduled {
+			continue
+		}
+
+		// If we're past the last window, send final message and schedule move.
+		if now.After(lastWin) {
+			content := "Camp windows complete. Moving this channel to awaiting-processing in 5 minutes."
+			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
+
+			camp.MoveScheduled = true
+			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+				continue
+			}
+
+			// Schedule move after 5 minutes.
+			go s.moveCampAfterDelay(camp.ChannelID, 5*time.Minute)
+			continue
+		}
+
+		// Normal window handling.
+		idx := currentWindowIndex(now, wins)
+		log.Printf("camp %s windowIdx=%d lastWindowIdx=%d\n", camp.ChannelID, idx, camp.LastWindowIdx)
+		if idx == 0 || idx <= camp.LastWindowIdx {
+			continue
+		}
+
+		content := fmt.Sprintf(
+			"----------------------- Window %d -----------------------",
+			idx,
+		)
+		_, err := s.dg.ChannelMessageSend(camp.ChannelID, content)
+		if err != nil {
+			continue
+		}
+
+		camp.LastWindowIdx = idx
+		if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+			continue
+		}
 	}
 }

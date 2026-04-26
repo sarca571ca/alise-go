@@ -80,7 +80,7 @@ func resolveHNM(s *discordgo.Session, i *discordgo.InteractionCreate) (string, b
 	return hnm, true
 }
 
-func resolveMod(s *discordgo.Session, i *discordgo.InteractionCreate) (string, bool) {
+func resolveHNMMod(s *discordgo.Session, i *discordgo.InteractionCreate) (string, bool) {
 	data := i.ApplicationCommandData()
 
 	var modAliases = map[string]string{

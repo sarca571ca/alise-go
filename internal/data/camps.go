@@ -294,3 +294,9 @@ func (s *Store) GetHNMCampChannelByCamp(
 
 	return ch, true, nil
 }
+
+func (s *Store) DeleteHNMCampChannel(id string) error {
+	const q = `DELETE FROM hnm_camp_channels WHERE id = ?`
+	_, err := s.DB.Exec(q, id)
+	return err
+}

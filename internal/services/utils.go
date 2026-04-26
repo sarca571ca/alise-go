@@ -100,7 +100,6 @@ func currentWindowIndex(now time.Time, wins models.HNMTimerWindows) int {
 func (s *HNMService) moveCampAfterDelay(channelID string, delay time.Duration) {
 	time.Sleep(delay)
 
-	// Move to AwaitingProcessing category.
 	guildID := s.cfg.GuildID
 	targetParent := s.cfg.Categories.AwaitingProcessingID
 	if guildID == "" || targetParent == "" {
@@ -110,4 +109,16 @@ func (s *HNMService) moveCampAfterDelay(channelID string, delay time.Duration) {
 	_, _ = s.dg.ChannelEdit(channelID, &discordgo.ChannelEdit{
 		ParentID: targetParent,
 	})
+}
+
+func shouldArchiveCamp(camp data.HNMCampChannel, timer data.HNMTimerRecord) bool {
+	if !camp.MoveScheduled {
+		return false
+	}
+
+	if !timer.LastKill.Equal(camp.LastKill) || timer.DaysSinceHQ != camp.DaysSinceHQ {
+		return true
+	}
+
+	return false
 }

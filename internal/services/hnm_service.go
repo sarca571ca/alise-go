@@ -42,23 +42,6 @@ func (s *HNMService) StartPolling(stop <-chan struct{}) {
 	}()
 }
 
-// func (s *HNMService) StartPolling(stop <-chan struct{}) {
-// 	ticker := time.NewTicker(1 * time.Minute)
-// 	go func() {
-// 		defer ticker.Stop()
-// 		for {
-// 			select {
-// 			case <-ticker.C:
-// 				s.tickCamps()
-// 				s.checkTimers()
-// 				s.tickCampWindows()
-// 			case <-stop:
-// 				return
-// 			}
-// 		}
-// 	}()
-// }
-
 func (s *HNMService) checkTimers() {
 	guildID := s.cfg.GuildID
 	channelID := s.cfg.Channels.HNMTimes
@@ -106,9 +89,7 @@ func (s *HNMService) sendCampPing(hnmName string, spawn time.Time, diff time.Dur
 	}
 
 	mins := int(diff.Minutes())
-	if mins < 1 {
-		mins = 1
-	}
+	mins = max(mins, 1)
 
 	content := fmt.Sprintf(
 		"@everyone %s camp will start in %d minutes (respawn at <t:%d:R>)",
@@ -222,9 +203,25 @@ func (s *HNMService) tickCampWindows() {
 	}
 
 	now := time.Now()
-	log.Printf("tickCampWindows: %d camps at %s\n", len(camps), now.Format(time.RFC3339))
 
 	for _, camp := range camps {
+		timerChannelID := s.cfg.Channels.HNMTimes
+		timerRec, ok, err := s.store.GetHNMTimerRecord(guildID, timerChannelID, camp.HNMID)
+		if err != nil {
+			log.Println("GetHNMTimerRecord error:", err)
+			continue
+		}
+		if !ok {
+			continue
+		}
+
+		if shouldArchiveCamp(camp, timerRec) {
+			if err := s.store.DeleteHNMCampChannel(camp.ID); err != nil {
+				log.Println("DeleteHNMCampChannel error:", err)
+			}
+			continue
+		}
+
 		if camp.IsClosed {
 			continue
 		}
@@ -249,12 +246,10 @@ func (s *HNMService) tickCampWindows() {
 
 		lastWin := wins.Windows[len(wins.Windows)-1]
 
-		// If we've already scheduled a move, nothing more to do here.
 		if camp.MoveScheduled {
 			continue
 		}
 
-		// If we're past the last window, send final message and schedule move.
 		if now.After(lastWin) {
 			content := "Camp windows complete. Moving this channel to awaiting-processing in 5 minutes."
 			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
@@ -264,7 +259,6 @@ func (s *HNMService) tickCampWindows() {
 				continue
 			}
 
-			// Schedule move after 5 minutes.
 			go s.moveCampAfterDelay(camp.ChannelID, 5*time.Minute)
 			continue
 		}
@@ -280,7 +274,7 @@ func (s *HNMService) tickCampWindows() {
 			"----------------------- Window %d -----------------------",
 			idx,
 		)
-		_, err := s.dg.ChannelMessageSend(camp.ChannelID, content)
+		_, err = s.dg.ChannelMessageSend(camp.ChannelID, content)
 		if err != nil {
 			continue
 		}

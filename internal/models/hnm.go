@@ -43,7 +43,7 @@ var HNMs = map[string]HNM{
 		BaseRespawn:    22 * time.Hour,
 		WindowInterval: 10 * time.Minute,
 		WindowCount:    7,
-		HQName:         "Aspidchelone",
+		HQName:         "Aspidochelone",
 	},
 	"behemoth": {
 		ID:             "behemoth",

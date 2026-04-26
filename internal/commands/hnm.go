@@ -75,7 +75,7 @@ func (cmd HNMCommand) HandleInteraction(s *discordgo.Session, i *discordgo.Inter
 	}
 
 	// HNM Mod
-	mod, ok := resolveMod(s, i)
+	mod, ok := resolveHNMMod(s, i)
 	if !ok {
 		return
 	}
@@ -114,8 +114,6 @@ func (cmd HNMCommand) HandleInteraction(s *discordgo.Session, i *discordgo.Inter
 	if err != nil {
 		return
 	}
-	// hnmTimerWindows := models.BuildHNMTimerWindows(hnmTimer)
-	// log.Println(hnmTimerWindows)
 
 	cmd.OnParsed(s, i, hnmTimer)
 }

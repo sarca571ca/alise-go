@@ -76,6 +76,20 @@ func (LinkshellCommand) SlashDef() *discordgo.ApplicationCommand {
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "restore",
+				Description: "Restores a linkshell from archive.",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Name:         "name",
+						Description:  "Linkshell name (eg. WhereDragon, Hideout)",
+						Type:         discordgo.ApplicationCommandOptionString,
+						Required:     true,
+						Autocomplete: false,
+					},
+				},
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "update",
 				Description: "Updates a linkshells claim record.",
 				Options: []*discordgo.ApplicationCommandOption{
@@ -105,9 +119,11 @@ func (cmd LinkshellCommand) HandleInteraction(s *discordgo.Session, i *discordgo
 	case "add":
 		cmd.handleAdd(s, i, sub)
 	case "remove":
-		cmd.handleAdd(s, i, sub)
+		cmd.handleRemove(s, i, sub)
+	case "restore":
+		cmd.handleRestore(s, i, sub)
 	case "update":
-		cmd.handleAdd(s, i, sub)
+		cmd.handleUpdate(s, i, sub)
 	}
 
 }
@@ -121,7 +137,6 @@ func (cmd LinkshellCommand) handleAdd(
 	i *discordgo.InteractionCreate,
 	sub *discordgo.ApplicationCommandInteractionDataOption,
 ) {
-	// TODO: ephemeral confirmation and log the user
 	cmd.Add(s, i, getNameOption(sub))
 }
 
@@ -130,9 +145,16 @@ func (cmd LinkshellCommand) handleRemove(
 	i *discordgo.InteractionCreate,
 	sub *discordgo.ApplicationCommandInteractionDataOption,
 ) {
-	// remove
-	// TODO: removes the record of the linkshell if it exists and return a ephemeral
-	// embed confirmation. log the user so we know who is modifying records
+	cmd.Remove(s, i, getNameOption(sub))
+}
+
+func (cmd LinkshellCommand) handleRestore(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+	sub *discordgo.ApplicationCommandInteractionDataOption,
+) {
+	// Restore
+	// TODO: Restores the Linkshell record from the archive and returns an ephemeral.
 }
 
 func (cmd LinkshellCommand) handleUpdate(
@@ -145,6 +167,7 @@ func (cmd LinkshellCommand) handleUpdate(
 	// with their current values and maybe show the current value in the label to allow
 	// for mistakes. allow for updating values as required. log the user
 	// so we know who is modifying records
+	cmd.Update(s, i, getNameOption(sub))
 }
 
 func getNameOption(sub *discordgo.ApplicationCommandInteractionDataOption) string {

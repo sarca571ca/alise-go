@@ -101,7 +101,7 @@ func (b *Bot) handleHNMCommand(s *discordgo.Session, i *discordgo.InteractionCre
 
 	timer, err := models.ParseHNMCommandInput(&input, now)
 	if err != nil {
-		respondError(s, i, "Invalid HNM input: "+err.Error())
+		respondEphemeral(s, i, "Invalid HNM input: "+err.Error())
 		return
 	}
 
@@ -111,13 +111,13 @@ func (b *Bot) handleHNMCommand(s *discordgo.Session, i *discordgo.InteractionCre
 	rec := data.NewRecordFromHNMTimer(guildID, channelID, timer)
 
 	if _, err := b.store.UpsertHNMTimerRecord(rec); err != nil {
-		respondError(s, i, "Failed to load timers")
+		respondEphemeral(s, i, "Failed to load timers")
 		return
 	}
 
 	recs, err := b.store.ListHNMTimerRecords(guildID, channelID)
 	if err != nil {
-		respondError(s, i, "Failed to load timers")
+		respondEphemeral(s, i, "Failed to load timers")
 		return
 	}
 
@@ -145,12 +145,12 @@ func formatHNMTimersPlain(timers []models.HNMTimer) string {
 		return "No HNM timers set for this channel yet."
 	}
 
-	var b strings.Builder
-	b.WriteString("Current HNM timers:\n")
+	var sb strings.Builder
+	sb.WriteString("Current HNM timers:\n")
 
 	for _, t := range timers {
 		w := models.BuildHNMTimerWindows(t)
-		fmt.Fprintf(&b,
+		fmt.Fprintf(&sb,
 			"- %s: last kill <t:%d:R>, next respawn <t:%d:R>\n",
 			t.HNM.Name,
 			t.LastKill.Unix(),
@@ -158,15 +158,5 @@ func formatHNMTimersPlain(timers []models.HNMTimer) string {
 		)
 	}
 
-	return b.String()
-}
-
-func respondError(s *discordgo.Session, i *discordgo.InteractionCreate, msg string) {
-	_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: msg,
-			Flags:   discordgo.MessageFlagsEphemeral, // only the user sees it
-		},
-	})
+	return sb.String()
 }

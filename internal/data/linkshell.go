@@ -29,7 +29,7 @@ type LinkshellRecord struct {
 	ArchivedAt            time.Time
 }
 
-func (s *Store) NewRecordFromLinkshellAdd(guildID string, cmdInput string) LinkshellRecord {
+func (s *Store) NewRecordFromLinkshellEntry(guildID string, cmdInput string) LinkshellRecord {
 	return LinkshellRecord{
 		GuildID:       guildID,
 		LinkshellName: cmdInput,
@@ -179,9 +179,10 @@ func (s *Store) GetLinkshellRecord(guildID, linkshellName string) (LinkshellReco
 	`
 
 	var (
-		ls           LinkshellRecord
-		createdAtStr string
-		updatedAtStr string
+		ls            LinkshellRecord
+		createdAtStr  string
+		updatedAtStr  string
+		archivedAtStr string
 	)
 
 	err := s.DB.QueryRow(q, guildID, linkshellName).Scan(
@@ -189,7 +190,7 @@ func (s *Store) GetLinkshellRecord(guildID, linkshellName string) (LinkshellReco
 		&ls.BehemothClaims, &ls.SimurghClaims, &ls.ShikigamiWeaponClaims, &ls.KingArthroClaims,
 		&ls.KingVinegarroonClaims, &ls.BloodsuckerClaims, &ls.TiamatClaims, &ls.VrtraClaims,
 		&ls.JormungandClaims, &ls.NidhoggClaims, &ls.AspidocheloneClaims, &ls.KingBehemothClaims,
-		&createdAtStr, &updatedAtStr, &ls.ArchivedAt,
+		&createdAtStr, &updatedAtStr, &archivedAtStr,
 	)
 	if err == sql.ErrNoRows {
 		return LinkshellRecord{}, false, nil
@@ -204,6 +205,11 @@ func (s *Store) GetLinkshellRecord(guildID, linkshellName string) (LinkshellReco
 	}
 	if ls.UpdatedAt, parseErr = fromStrTime(updatedAtStr); parseErr != nil {
 		return LinkshellRecord{}, false, parseErr
+	}
+	if archivedAtStr != "" {
+		if ls.ArchivedAt, err = fromStrTime(archivedAtStr); err != nil {
+			return LinkshellRecord{}, false, parseErr
+		}
 	}
 
 	return ls, true, err

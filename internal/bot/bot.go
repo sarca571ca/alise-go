@@ -6,9 +6,10 @@ import (
 	"alise-go/internal/data"
 	"alise-go/internal/services"
 	"context"
-	"log"
+	"fmt"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/bwmarrin/discordgo"
@@ -55,11 +56,13 @@ func (b *Bot) registerSlashCommands(appID string) error {
 
 	scopeGuildID := b.cfg.GuildID
 
-	log.Println("Bulk overwritting slash commands for guild:", scopeGuildID)
+	var sb strings.Builder
+	fmt.Fprintf(&sb, "Bulk overwritting slash commands for guild:", scopeGuildID)
+	b.logBasicMessage("SlashCommands", sb.String())
 
 	_, err := b.dg.ApplicationCommandBulkOverwrite(appID, scopeGuildID, defs)
 	if err != nil {
-		log.Println("error registering slash commands:", err)
+		b.logErrorMessage("SlashCommands", err)
 	}
 
 	return err

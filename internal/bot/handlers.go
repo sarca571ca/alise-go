@@ -1,8 +1,6 @@
 package bot
 
 import (
-	"fmt"
-
 	"github.com/bwmarrin/discordgo"
 )
 
@@ -14,5 +12,5 @@ func (b *Bot) registerHandlers() {
 }
 
 func (b *Bot) onReady(s *discordgo.Session, r *discordgo.Ready) {
-	fmt.Println("Bot is running. Press Ctrl+C to exit.")
+	b.logBasicMessage("Ready", "Bot is running. Press Ctrl+C to exit.")
 }

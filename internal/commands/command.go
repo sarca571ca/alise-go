@@ -47,7 +47,7 @@ func (r *Registery) HandleInteraction(s *discordgo.Session, i *discordgo.Interac
 		cmd.HandleInteraction(s, i)
 
 	case discordgo.InteractionApplicationCommandAutocomplete:
-		r.handleCommandAutcomplete(s, i)
+		r.handleCommandAutocomplete(s, i)
 
 	case discordgo.InteractionMessageComponent:
 		r.handleComponentInteractions(s, i)
@@ -72,7 +72,7 @@ func (r *Registery) handleCommandRun(s *discordgo.Session, i *discordgo.Interact
 	}
 }
 
-func (r *Registery) handleCommandAutcomplete(s *discordgo.Session, i *discordgo.InteractionCreate) {
+func (r *Registery) handleCommandAutocomplete(s *discordgo.Session, i *discordgo.InteractionCreate) {
 	data := i.ApplicationCommandData()
 
 	cmd, ok := r.Get(data.Name)

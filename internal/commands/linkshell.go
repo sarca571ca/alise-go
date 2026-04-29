@@ -21,6 +21,12 @@ type LinkshellRemoveHandler func(
 	ls string,
 )
 
+type LinkshellRestoreHandler func(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+	ls string,
+)
+
 type LinkshellUpdateHandler func(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
@@ -28,10 +34,11 @@ type LinkshellUpdateHandler func(
 )
 
 type LinkshellCommand struct {
-	List   LinkshellListHandler
-	Add    LinkshellAddHandler
-	Remove LinkshellRemoveHandler
-	Update LinkshellUpdateHandler
+	List    LinkshellListHandler
+	Add     LinkshellAddHandler
+	Remove  LinkshellRemoveHandler
+	Restore LinkshellRestoreHandler
+	Update  LinkshellUpdateHandler
 }
 
 func (LinkshellCommand) Name() string        { return "linkshell" }
@@ -88,20 +95,21 @@ func (LinkshellCommand) SlashDef() *discordgo.ApplicationCommand {
 					},
 				},
 			},
-			{
-				Type:        discordgo.ApplicationCommandOptionSubCommand,
-				Name:        "update",
-				Description: "Updates a linkshells claim record.",
-				Options: []*discordgo.ApplicationCommandOption{
-					{
-						Name:         "name",
-						Description:  "Linkshell name (eg. WhereDragon, Hideout)",
-						Type:         discordgo.ApplicationCommandOptionString,
-						Required:     true,
-						Autocomplete: false,
-					},
-				},
-			},
+			// NOTE: Commented this to disable the sub-command.
+			// {
+			// 	Type:        discordgo.ApplicationCommandOptionSubCommand,
+			// 	Name:        "update",
+			// 	Description: "Updates a linkshells claim record.",
+			// 	Options: []*discordgo.ApplicationCommandOption{
+			// 		{
+			// 			Name:         "name",
+			// 			Description:  "Linkshell name (eg. WhereDragon, Hideout)",
+			// 			Type:         discordgo.ApplicationCommandOptionString,
+			// 			Required:     true,
+			// 			Autocomplete: false,
+			// 		},
+			// 	},
+			// },
 		},
 	}
 }
@@ -154,7 +162,7 @@ func (cmd LinkshellCommand) handleRestore(
 	sub *discordgo.ApplicationCommandInteractionDataOption,
 ) {
 	// Restore
-	// TODO: Restores the Linkshell record from the archive and returns an ephemeral.
+	cmd.Restore(s, i, getNameOption(sub))
 }
 
 func (cmd LinkshellCommand) handleUpdate(
@@ -162,8 +170,8 @@ func (cmd LinkshellCommand) handleUpdate(
 	i *discordgo.InteractionCreate,
 	sub *discordgo.ApplicationCommandInteractionDataOption,
 ) {
-	// update
-	// TODO: shows the user a modal of the linkshell record. each field is prefilled
+	// WARN: Feature on hold for now
+	// NOTE: shows the user a modal of the linkshell record. each field is prefilled
 	// with their current values and maybe show the current value in the label to allow
 	// for mistakes. allow for updating values as required. log the user
 	// so we know who is modifying records

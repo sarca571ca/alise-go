@@ -50,7 +50,7 @@ func (b *Bot) buildHnmCommand(cfg config.Config) commands.Command {
 				return
 			}
 
-			content := formatHNMTimersPlain(timers)
+			content := formatHNMTimerPlain(timer)
 
 			_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
 				Type: discordgo.InteractionResponseChannelMessageWithSource,
@@ -66,11 +66,6 @@ func (b *Bot) buildHnmCommand(cfg config.Config) commands.Command {
 
 func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 	linkshellCmd := commands.LinkshellCommand{
-		// TODO: I think we'll need to add the handlers for each of the mods for this
-		// command. I'm thinking i want to have a Linkshell Leaderboard like the timerboard.
-		// I maybe getting ahead of myself a bit though. The pop command will update a
-		// individual linkshell and hnm claim. It might be best to do a dialog box for the
-		// update mod so you can adjust a value if its inputted incorrectly.
 		List: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			guildID := i.GuildID
 			recs, err := b.store.ListLinkshellRecords(guildID)
@@ -103,7 +98,6 @@ func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 			respondEphemeral(s, i, sb.String())
 
 		},
-		// TODO: Remove command for the Linkshell List
 		Remove: func(s *discordgo.Session, i *discordgo.InteractionCreate, ls string) {
 			guildID := i.GuildID
 			_, ok, err := b.store.GetLinkshellRecord(guildID, ls)
@@ -124,7 +118,28 @@ func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 			fmt.Fprintf(&sb, "Successfully removed %s to the linkshells list.", ls)
 			respondEphemeral(s, i, sb.String())
 		},
+		Restore: func(s *discordgo.Session, i *discordgo.InteractionCreate, ls string) {
+			guildID := i.GuildID
+			_, ok, err := b.store.GetLinkshellRecord(guildID, ls)
+			if err != nil {
+				respondEphemeral(s, i, err.Error())
+				return
+			}
+			if ok {
+				respondEphemeral(s, i, "The linkshell already exist.")
+				return
+			}
+			if _, err := b.store.RestoreLinkshellRecord(guildID, ls); err != nil {
+				respondEphemeral(s, i, "Failed to restore Linkshell")
+				return
+			}
+
+			var sb strings.Builder
+			fmt.Fprintf(&sb, "Successfully restored %s to the linkshells list.", ls)
+			respondEphemeral(s, i, sb.String())
+		},
 		// TODO: Update modal that self populates the the fields with current values
+		// WARN: I'm not going to implement this yet there is to much of a concern of manipulating data.
 		Update: func(s *discordgo.Session, i *discordgo.InteractionCreate, ls string) {},
 	}
 	return linkshellCmd

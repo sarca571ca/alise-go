@@ -334,7 +334,17 @@ func (s *Store) RestoreLinkshellRecord(guildID, linkshellName string) (Linkshell
 	ls.ID = "" // UpsertLinkshellRecord will generate a new ID
 	ls.ArchivedAt = time.Time{}
 
+	if err := s.DeleteLinkshellArchiveRecord(guildID, linkshellName); err != nil {
+		return LinkshellRecord{}, err
+	}
+
 	return s.UpsertLinkshellRecord(ls)
+}
+
+func (s *Store) DeleteLinkshellArchiveRecord(guildID, linkshellName string) error {
+	const q = `DELETE FROM linkshells_archive WHERE guild_id = ? AND linkshell_name = ?`
+	_, err := s.DB.Exec(q, guildID, linkshellName)
+	return err
 }
 
 // TODO: Still need to call all this appropriately with the linkshell command using a

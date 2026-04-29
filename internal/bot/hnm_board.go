@@ -160,3 +160,17 @@ func formatHNMTimersPlain(timers []models.HNMTimer) string {
 
 	return sb.String()
 }
+
+func formatHNMTimerPlain(timer models.HNMTimer) string {
+	var sb strings.Builder
+
+	w := models.BuildHNMTimerWindows(timer)
+	fmt.Fprintf(&sb,
+		"- %s: last kill <t:%d:R>, next respawn <t:%d:R>\n",
+		timer.HNM.Name,
+		timer.LastKill.Unix(),
+		w.NextRespawn.Unix(),
+	)
+
+	return sb.String()
+}

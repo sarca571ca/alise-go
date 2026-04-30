@@ -5,6 +5,8 @@ import "time"
 var defaultLoc *time.Location
 
 func init() {
+	// TODO: Need tpo move "Ameirca/Los_Angeles" to a config file so it can be
+	// adjusted without searching through the code to change something simple.
 	loc, err := time.LoadLocation("America/Los_Angeles")
 	if err != nil {
 		defaultLoc = time.UTC

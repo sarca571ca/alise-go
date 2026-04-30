@@ -114,3 +114,12 @@ func resolveHNMMod(s *discordgo.Session, i *discordgo.InteractionCreate) (string
 	}
 	return mod, true
 }
+
+func getNameOption(sub *discordgo.ApplicationCommandInteractionDataOption) string {
+	for _, opt := range sub.Options {
+		if opt.Name == "name" {
+			return opt.StringValue()
+		}
+	}
+	return ""
+}

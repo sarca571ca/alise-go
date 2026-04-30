@@ -177,12 +177,3 @@ func (cmd LinkshellCommand) handleUpdate(
 	// so we know who is modifying records
 	cmd.Update(s, i, getNameOption(sub))
 }
-
-func getNameOption(sub *discordgo.ApplicationCommandInteractionDataOption) string {
-	for _, opt := range sub.Options {
-		if opt.Name == "name" {
-			return opt.StringValue()
-		}
-	}
-	return ""
-}

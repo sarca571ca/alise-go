@@ -21,6 +21,7 @@ type Bot struct {
 	cfg   config.Config
 	store *data.Store
 	hnm   *services.HNMService
+	camp  *services.CampService
 }
 
 func New(cfg config.Config) (*Bot, error) {
@@ -45,6 +46,7 @@ func New(cfg config.Config) (*Bot, error) {
 	}
 
 	b.hnm = services.NewHNMService(store, cfg, dg)
+	b.camp = services.NewCampService(store, cfg, dg)
 
 	dg.Identify.Intents = discordgo.IntentGuilds
 

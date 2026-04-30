@@ -145,6 +145,31 @@ func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 	return linkshellCmd
 }
 
+func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
+	// TODO: Flesh out the functionality here.
+	popCommand := commands.CampCommand{
+		Pop: func(s *discordgo.Session, i *discordgo.InteractionCreate, lsName string) {
+			println("CmdName:", lsName)
+		},
+		Open: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			println("CmdName:")
+		},
+		Close: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			println("CmdName:")
+		},
+		Enrage: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			println("CmdName:")
+		},
+		Stable: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			println("CmdName:")
+		},
+		CTA: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			println("CmdName:")
+		},
+	}
+	return popCommand
+}
+
 func (b *Bot) withCommandLogging(cmd commands.Command) commands.Command {
 	var autoFn func(
 		s *discordgo.Session,

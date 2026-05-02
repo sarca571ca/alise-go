@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"strings"
 	"time"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 func shortMonth(t time.Time) string {
@@ -95,20 +93,6 @@ func currentWindowIndex(now time.Time, wins models.HNMTimerWindows) int {
 	}
 
 	return 0
-}
-
-func (s *HNMService) moveCampAfterDelay(channelID string, delay time.Duration) {
-	time.Sleep(delay)
-
-	guildID := s.cfg.GuildID
-	targetParent := s.cfg.Categories.AwaitingProcessingID
-	if guildID == "" || targetParent == "" {
-		return
-	}
-
-	_, _ = s.dg.ChannelEdit(channelID, &discordgo.ChannelEdit{
-		ParentID: targetParent,
-	})
 }
 
 func shouldArchiveCamp(camp data.HNMCampChannel, timer data.HNMTimerRecord) bool {

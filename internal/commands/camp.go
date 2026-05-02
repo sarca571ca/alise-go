@@ -25,8 +25,13 @@ type CloseHandler func(
 type EnrageHandler func(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
+	window int,
 )
 
+type ContinueHandler func(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+)
 type StableHandler func(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
@@ -37,12 +42,13 @@ type CTAHandler func(
 	i *discordgo.InteractionCreate,
 )
 type CampCommand struct {
-	Pop    PopHandler
-	Open   OpenHandler
-	Close  CloseHandler
-	Enrage EnrageHandler
-	Stable StableHandler
-	CTA    CTAHandler
+	Pop      PopHandler
+	Open     OpenHandler
+	Close    CloseHandler
+	Enrage   EnrageHandler
+	Continue ContinueHandler
+	Stable   StableHandler
+	CTA      CTAHandler
 }
 
 func (CampCommand) Name() string        { return "camp" }
@@ -62,7 +68,7 @@ func (CampCommand) SlashDef() *discordgo.ApplicationCommand {
 						Description:  "Linkshell name that claimed.",
 						Type:         discordgo.ApplicationCommandOptionString,
 						Required:     true,
-						Autocomplete: true, // NOTE: Need to autocomplete from the linkshells table in the db
+						Autocomplete: false,
 					},
 				},
 			},
@@ -80,11 +86,25 @@ func (CampCommand) SlashDef() *discordgo.ApplicationCommand {
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "enrage",
 				Description: "Re-Activates the camp if the HNM enrages.",
+				Options: []*discordgo.ApplicationCommandOption{
+					{
+						Name:         "window",
+						Description:  "Enrage window be sure to increment for each enrage.",
+						Type:         discordgo.ApplicationCommandOptionInteger,
+						Required:     true,
+						Autocomplete: false,
+					},
+				},
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "continue",
+				Description: "Extends the camp.",
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
 				Name:        "stable",
-				Description: "Ends the camp after enrage.",
+				Description: "Ends an extended camp.",
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -110,7 +130,9 @@ func (cmd CampCommand) HandleInteraction(s *discordgo.Session, i *discordgo.Inte
 	case "close":
 		cmd.handleClose(s, i)
 	case "enrage":
-		cmd.handleEnrage(s, i)
+		cmd.handleEnrage(s, i, sub)
+	case "continue":
+		cmd.handleContinue(s, i)
 	case "stable":
 		cmd.handleStable(s, i)
 	case "cta":
@@ -118,7 +140,8 @@ func (cmd CampCommand) HandleInteraction(s *discordgo.Session, i *discordgo.Inte
 	}
 }
 
-// TODO: AutoComplete from linkshells tabl"e
+// NOTE: AutoComplete from linkshells table
+// On hold future QoL change.
 func (cmd CampCommand) HandleAutoCompleteCommand(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
@@ -154,8 +177,16 @@ func (cmd CampCommand) handleClose(
 func (cmd CampCommand) handleEnrage(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
+	sub *discordgo.ApplicationCommandInteractionDataOption,
 ) {
-	cmd.Enrage(s, i)
+	cmd.Enrage(s, i, getWindowOption(sub))
+}
+
+func (cmd CampCommand) handleContinue(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) {
+	cmd.Continue(s, i)
 }
 
 func (cmd CampCommand) handleStable(

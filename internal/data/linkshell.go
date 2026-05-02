@@ -282,9 +282,6 @@ func (s *Store) ArchiveLinkshellRecord(guildID, linkshellName string) (Linkshell
 	return ls, execErr
 }
 
-// TODO: We have archive capabilities atm but in the future will need to add the ability to restore
-// from the archived table. This is fluff for now. Will need to definetely add soem sort of robust
-// logging to track users incase of malitiously removing records to the archive.
 func (s *Store) RestoreLinkshellRecord(guildID, linkshellName string) (LinkshellRecord, error) {
 	const q = `
 		SELECT id, guild_id, linkshell_name,
@@ -346,6 +343,3 @@ func (s *Store) DeleteLinkshellArchiveRecord(guildID, linkshellName string) erro
 	_, err := s.DB.Exec(q, guildID, linkshellName)
 	return err
 }
-
-// TODO: Still need to call all this appropriately with the linkshell command using a
-// switch statement for the different mods.

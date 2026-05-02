@@ -123,3 +123,12 @@ func getNameOption(sub *discordgo.ApplicationCommandInteractionDataOption) strin
 	}
 	return ""
 }
+
+func getWindowOption(sub *discordgo.ApplicationCommandInteractionDataOption) int {
+	for _, opt := range sub.Options {
+		if opt.Name == "window" {
+			return int(opt.IntValue())
+		}
+	}
+	return 0
+}

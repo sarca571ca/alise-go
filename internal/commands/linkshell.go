@@ -170,8 +170,8 @@ func (cmd LinkshellCommand) handleUpdate(
 	i *discordgo.InteractionCreate,
 	sub *discordgo.ApplicationCommandInteractionDataOption,
 ) {
-	// WARN: Feature on hold for now
-	// NOTE: shows the user a modal of the linkshell record. each field is prefilled
+	// NOTE: Feature on hold for now
+	// Shows the user a modal of the linkshell record. each field is prefilled
 	// with their current values and maybe show the current value in the label to allow
 	// for mistakes. allow for updating values as required. log the user
 	// so we know who is modifying records

@@ -3,6 +3,7 @@ package services
 import (
 	"alise-go/internal/config"
 	"alise-go/internal/data"
+	"alise-go/internal/formatting"
 	"alise-go/internal/models"
 	"fmt"
 	"log"
@@ -250,8 +251,8 @@ func (s *HNMService) tickCampWindows() {
 			continue
 		}
 
-		if now.After(lastWin) {
-			content := "Camp windows complete. Moving this channel to awaiting-processing in 5 minutes."
+		if now.After(lastWin) && !camp.IsEnraged {
+			content := "Moving channel to awaiting-processing in 5 minutes."
 			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
 
 			camp.MoveScheduled = true
@@ -259,21 +260,16 @@ func (s *HNMService) tickCampWindows() {
 				continue
 			}
 
-			go s.moveCampAfterDelay(camp.ChannelID, 5*time.Minute)
+			go s.MoveCampAfterDelay(camp.ChannelID, 5*time.Minute)
 			continue
 		}
 
-		// Normal window handling.
 		idx := currentWindowIndex(now, wins)
-		log.Printf("camp %s windowIdx=%d lastWindowIdx=%d\n", camp.ChannelID, idx, camp.LastWindowIdx)
 		if idx == 0 || idx <= camp.LastWindowIdx {
 			continue
 		}
 
-		content := fmt.Sprintf(
-			"----------------------- Window %d -----------------------",
-			idx,
-		)
+		content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", idx))
 		_, err = s.dg.ChannelMessageSend(camp.ChannelID, content)
 		if err != nil {
 			continue
@@ -284,4 +280,18 @@ func (s *HNMService) tickCampWindows() {
 			continue
 		}
 	}
+}
+
+func (s *HNMService) MoveCampAfterDelay(channelID string, delay time.Duration) {
+	time.Sleep(delay)
+
+	guildID := s.cfg.GuildID
+	targetParent := s.cfg.Categories.AwaitingProcessingID
+	if guildID == "" || targetParent == "" {
+		return
+	}
+
+	_, _ = s.dg.ChannelEdit(channelID, &discordgo.ChannelEdit{
+		ParentID: targetParent,
+	})
 }

@@ -24,11 +24,6 @@ func buildHNMTimerBoardEmbed(timers []models.HNMTimer) *discordgo.MessageEmbed {
 	for _, t := range timers {
 		w := models.BuildHNMTimerWindows(t)
 
-		// firstWindow = t.LastKill
-		// if len(w.Windows) > 0 {
-		// 	firstWindow = w.Windows[0]
-		// }
-
 		value := fmt.Sprintf(
 			"Last kill: <t:%d:R>\nNext respawn: <t:%d:R>",
 			t.LastKill.Unix(),

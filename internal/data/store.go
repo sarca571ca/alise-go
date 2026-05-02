@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS hnm_camp_channels (
     seq             INTEGER NOT NULL,
     is_closed       INTEGER NOT NULL DEFAULT 0,
     is_enraged      INTEGER NOT NULL DEFAULT 0,
+	is_spawned		INTEGER NOT NULL DEFAULT 0,
     last_window_idx INTEGER NOT NULL DEFAULT 0,
     created_at      TEXT NOT NULL,
     updated_at      TEXT NOT NULL,

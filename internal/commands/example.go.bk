@@ -27,7 +27,7 @@ func (r *Registery) handleComponentInteractions(s *discordgo.Session, i *discord
 	// 							CustomID:    dateInputCustomID,
 	// 							Label:       "Date (eg. 20260101 or 20261030)",
 	// 							Style:       discordgo.TextInputShort,
-	// 							Placeholder: "", // TODO: Make this todays date
+	// 							Placeholder: "",
 	// 							Required:    true,
 	// 						},
 	// 					},

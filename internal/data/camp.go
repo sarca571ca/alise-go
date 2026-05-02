@@ -15,6 +15,7 @@ type HNMCampChannel struct {
 	Seq           int
 	IsClosed      bool
 	IsEnraged     bool
+	IsSpawned     bool
 	LastWindowIdx int
 	CreatedAt     time.Time
 	UpdatedAt     time.Time
@@ -42,6 +43,11 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 		isEnraged = 1
 	}
 
+	isSpawned := 0
+	if ch.IsSpawned {
+		isSpawned = 1
+	}
+
 	moveScheduled := 0
 	if ch.MoveScheduled {
 		moveScheduled = 1
@@ -50,22 +56,23 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 	const q = `
 	INSERT INTO hnm_camp_channels (
 		id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-		seq, is_closed, is_enraged, last_window_idx, move_scheduled,
+		seq, is_closed, is_enraged, is_spawned, last_window_idx, move_scheduled,
 		created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(guild_id, hnm_id, last_kill, days_since_hq) DO UPDATE SET
 		last_kill       = excluded.last_kill,
 		days_since_hq   = excluded.days_since_hq,
 		seq             = excluded.seq,
 		is_closed       = excluded.is_closed,
 		is_enraged      = excluded.is_enraged,
+		is_spawned		= excluded.is_spawned,
 		last_window_idx = excluded.last_window_idx,
 		move_scheduled  = excluded.move_scheduled,
 		updated_at      = excluded.updated_at
 	`
 
 	_, err := s.DB.Exec(q, ch.ID, ch.GuildID, ch.ChannelID, ch.HNMID, toStrTime(ch.LastKill),
-		ch.DaysSinceHQ, ch.Seq, isClosed, isEnraged, ch.LastWindowIdx, moveScheduled,
+		ch.DaysSinceHQ, ch.Seq, isClosed, isEnraged, isSpawned, ch.LastWindowIdx, moveScheduled,
 		toStrTime(ch.CreatedAt), toStrTime(ch.UpdatedAt),
 	)
 
@@ -75,7 +82,8 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCampChannel, bool, error) {
 	const q = `
 	SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-		   seq, is_closed, is_enraged, last_window_idx, move_scheduled, created_at, updated_at 
+		   seq, is_closed, is_enraged, is_spawned, last_window_idx, 
+		   move_scheduled, created_at, updated_at 
 	FROM hnm_camp_channels
 	WHERE guild_id = ? AND channel_id = ?
 	`
@@ -85,6 +93,7 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 		lastKillStr        string
 		isClosedInt        int
 		isEnragedInt       int
+		isSpawnedInt       int
 		createdAtStr       string
 		updatedAtStr       string
 		isMoveScheduledInt int
@@ -92,7 +101,7 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 
 	err := s.DB.QueryRow(q, guildID, channelID).Scan(
 		&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID, &lastKillStr, &ch.DaysSinceHQ,
-		&ch.Seq, &isClosedInt, &isEnragedInt, &ch.LastWindowIdx, &isMoveScheduledInt,
+		&ch.Seq, &isClosedInt, &isEnragedInt, &isSpawnedInt, &ch.LastWindowIdx, &isMoveScheduledInt,
 		&createdAtStr, &updatedAtStr,
 	)
 
@@ -115,6 +124,7 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 	}
 	ch.IsClosed = isClosedInt != 0
 	ch.IsEnraged = isEnragedInt != 0
+	ch.IsSpawned = isSpawnedInt != 0
 	ch.MoveScheduled = isMoveScheduledInt != 0
 
 	return ch, true, nil
@@ -123,7 +133,8 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 func (s *Store) ListHNMCampChannels(guildID string) ([]HNMCampChannel, error) {
 	const q = `
 	SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-		   seq, is_closed, is_enraged, last_window_idx, move_scheduled, created_at, updated_at
+		   seq, is_closed, is_enraged, is_spawned, last_window_idx, 
+		   move_scheduled, created_at, updated_at
 	FROM hnm_camp_channels
 	WHERE guild_id = ?
 	`
@@ -141,13 +152,14 @@ func (s *Store) ListHNMCampChannels(guildID string) ([]HNMCampChannel, error) {
 			lastKillStr        string
 			isClosedInt        int
 			isEnragedInt       int
+			isSpawnedInt       int
 			createdAtStr       string
 			updatedAtStr       string
 			isMoveScheduledInt int
 		)
 		if err := rows.Scan(
 			&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID, &lastKillStr, &ch.DaysSinceHQ,
-			&ch.Seq, &isClosedInt, &isEnragedInt, &ch.LastWindowIdx, &isMoveScheduledInt,
+			&ch.Seq, &isClosedInt, &isEnragedInt, &isSpawnedInt, &ch.LastWindowIdx, &isMoveScheduledInt,
 			&createdAtStr, &updatedAtStr,
 		); err != nil {
 			return nil, err
@@ -164,6 +176,7 @@ func (s *Store) ListHNMCampChannels(guildID string) ([]HNMCampChannel, error) {
 		}
 		ch.IsClosed = isClosedInt != 0
 		ch.IsEnraged = isEnragedInt != 0
+		ch.IsSpawned = isSpawnedInt != 0
 		ch.MoveScheduled = isMoveScheduledInt != 0
 		out = append(out, ch)
 	}
@@ -185,7 +198,7 @@ func (s *Store) ListHNMCampChannelsForDay(guildID, hnmID string, day time.Time) 
 	const q = `
 		SELECT id, guild_id, channel_id, hnm_id,
 		       last_kill, days_since_hq, seq,
-		       is_closed, is_enraged, last_window_idx,
+		       is_closed, is_enraged, is_spawned, last_window_idx,
 		       move_scheduled, created_at, updated_at
 		FROM hnm_camp_channels
 		WHERE guild_id = ?
@@ -207,15 +220,16 @@ func (s *Store) ListHNMCampChannelsForDay(guildID, hnmID string, day time.Time) 
 			lastKillStr        string
 			isClosedInt        int
 			isEnragedInt       int
+			isSpawnedInt       int
 			createdAtStr       string
 			updatedAtStr       string
 			isMoveScheduledInt int
 		)
 		if err := rows.Scan(
-			&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID,
-			&lastKillStr, &ch.DaysSinceHQ, &ch.Seq,
-			&isClosedInt, &isEnragedInt, &ch.LastWindowIdx,
-			&isMoveScheduledInt, &createdAtStr, &updatedAtStr,
+			&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID, &lastKillStr,
+			&ch.DaysSinceHQ, &ch.Seq, &isClosedInt, &isEnragedInt,
+			&isSpawnedInt, &ch.LastWindowIdx, &isMoveScheduledInt, &createdAtStr,
+			&updatedAtStr,
 		); err != nil {
 			return nil, err
 		}
@@ -231,6 +245,7 @@ func (s *Store) ListHNMCampChannelsForDay(guildID, hnmID string, day time.Time) 
 		}
 		ch.IsClosed = isClosedInt != 0
 		ch.IsEnraged = isEnragedInt != 0
+		ch.IsSpawned = isSpawnedInt != 0
 		ch.MoveScheduled = isMoveScheduledInt != 0
 
 		out = append(out, ch)
@@ -245,7 +260,8 @@ func (s *Store) GetHNMCampChannelByCamp(
 ) (HNMCampChannel, bool, error) {
 	const q = `
 	SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-		   seq, is_closed, is_enraged, last_window_idx, move_scheduled, created_at, updated_at
+		   seq, is_closed, is_enraged, is_spawned, last_window_idx, 
+		   move_scheduled, created_at, updated_at
 	FROM hnm_camp_channels
 	WHERE guild_id = ? AND hnm_id = ? AND last_kill = ? AND days_since_hq = ?
 	`
@@ -255,6 +271,7 @@ func (s *Store) GetHNMCampChannelByCamp(
 		lastKillStr        string
 		isClosedInt        int
 		isEnragedInt       int
+		isSpawnedInt       int
 		createdAtStr       string
 		updatedAtStr       string
 		isMoveScheduledInt int
@@ -268,8 +285,8 @@ func (s *Store) GetHNMCampChannelByCamp(
 		daysSinceHQ,
 	).Scan(
 		&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID, &lastKillStr, &ch.DaysSinceHQ,
-		&ch.Seq, &isClosedInt, &isEnragedInt, &ch.LastWindowIdx, &isMoveScheduledInt,
-		&createdAtStr, &updatedAtStr,
+		&ch.Seq, &isClosedInt, &isEnragedInt, &isSpawnedInt, &ch.LastWindowIdx,
+		&isMoveScheduledInt, &createdAtStr, &updatedAtStr,
 	)
 	if err == sql.ErrNoRows {
 		return HNMCampChannel{}, false, nil
@@ -290,6 +307,7 @@ func (s *Store) GetHNMCampChannelByCamp(
 	}
 	ch.IsClosed = isClosedInt != 0
 	ch.IsEnraged = isEnragedInt != 0
+	ch.IsSpawned = isSpawnedInt != 0
 	ch.MoveScheduled = isMoveScheduledInt != 0
 
 	return ch, true, nil

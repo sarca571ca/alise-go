@@ -10,6 +10,7 @@ type PopHandler func(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
 	ls string,
+	quality string,
 )
 
 type OpenHandler func(
@@ -69,6 +70,13 @@ func (CampCommand) SlashDef() *discordgo.ApplicationCommand {
 						Type:         discordgo.ApplicationCommandOptionString,
 						Required:     true,
 						Autocomplete: false,
+					},
+					{
+						Name:         "quality",
+						Description:  "Quality of the hnm claimed.",
+						Type:         discordgo.ApplicationCommandOptionString,
+						Required:     false, // Not required here but will fail if its a king later in the code
+						Autocomplete: true,
 					},
 				},
 			},
@@ -157,7 +165,7 @@ func (cmd CampCommand) handlePop(
 	i *discordgo.InteractionCreate,
 	sub *discordgo.ApplicationCommandInteractionDataOption,
 ) {
-	cmd.Pop(s, i, getNameOption(sub))
+	cmd.Pop(s, i, getNameOption(sub), getQualityOption(sub))
 }
 
 func (cmd CampCommand) handleOpen(

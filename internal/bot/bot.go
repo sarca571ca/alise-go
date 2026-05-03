@@ -59,7 +59,7 @@ func (b *Bot) registerSlashCommands(appID string) error {
 	scopeGuildID := b.cfg.GuildID
 
 	var sb strings.Builder
-	fmt.Fprintf(&sb, "Bulk overwritting slash commands for guild:", scopeGuildID)
+	fmt.Fprintf(&sb, "Bulk overwritting slash commands for guild: %s", scopeGuildID)
 	b.logBasicMessage("SlashCommands", sb.String())
 
 	_, err := b.dg.ApplicationCommandBulkOverwrite(appID, scopeGuildID, defs)

@@ -164,13 +164,19 @@ func (s *HNMService) tickCamps() {
 			continue
 		}
 
-		content := fmt.Sprintf(
-			"Camp channel created for %s (HQ day %d). First window at <t:%d:R>.",
-			hnm.Name,
-			timer.DaysSinceHQ,
-			firstWindow.Unix(),
-		)
-		_, _ = s.dg.ChannelMessageSend(channel.ID, content)
+		msg := models.GetCampInfo(hnm, timer, firstWindow)
+
+		_, err = s.dg.ChannelMessageSendComplex(channel.ID, msg)
+		if err != nil {
+			log.Println("EmbedSend Error:", err)
+		}
+
+		_, err = s.dg.ChannelMessageSend(channel.ID, formatting.FormatWindowHeading("Window opens in 20 Minutes x-in"))
+		if err != nil {
+			log.Println("MsgSend Error: ", err)
+		}
+
+		// msg = models.GetRSVPInput(hnm, firstWindow)
 
 		chRecord := data.HNMCampChannel{
 			GuildID:       guildID,
@@ -179,6 +185,7 @@ func (s *HNMService) tickCamps() {
 			LastKill:      timer.LastKill,
 			DaysSinceHQ:   timer.DaysSinceHQ,
 			Seq:           seq,
+			Mod:           timer.Mod,
 			IsClosed:      false,
 			IsEnraged:     false,
 			LastWindowIdx: 0,

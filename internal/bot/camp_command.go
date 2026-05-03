@@ -13,7 +13,7 @@ import (
 
 func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
 	popCommand := commands.CampCommand{
-		Pop: func(s *discordgo.Session, i *discordgo.InteractionCreate, lsName string) {
+		Pop: func(s *discordgo.Session, i *discordgo.InteractionCreate, lsName, quality string) {
 			ch, err := s.Channel(i.ChannelID)
 			if err != nil {
 				respondEphemeral(s, i, "Failed to load channel.")

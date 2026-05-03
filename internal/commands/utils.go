@@ -124,6 +124,15 @@ func getNameOption(sub *discordgo.ApplicationCommandInteractionDataOption) strin
 	return ""
 }
 
+func getQualityOption(sub *discordgo.ApplicationCommandInteractionDataOption) string {
+	for _, opt := range sub.Options {
+		if opt.Name == "quality" {
+			return opt.StringValue()
+		}
+	}
+	return ""
+}
+
 func getWindowOption(sub *discordgo.ApplicationCommandInteractionDataOption) int {
 	for _, opt := range sub.Options {
 		if opt.Name == "window" {

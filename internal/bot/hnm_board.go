@@ -4,6 +4,7 @@ import (
 	"alise-go/internal/data"
 	"alise-go/internal/models"
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 
@@ -11,35 +12,54 @@ import (
 )
 
 func buildHNMTimerBoardEmbed(timers []models.HNMTimer) *discordgo.MessageEmbed {
+	color := 0x760eed
 	if len(timers) == 0 {
 		return &discordgo.MessageEmbed{
 			Title:       "HNM Camp Timers",
 			Description: "No timers set for this channel yet.",
-			Color:       0x00ff99,
+			Color:       color,
 		}
 	}
 
-	fields := make([]*discordgo.MessageEmbedField, 0, len(timers))
+	type timerRow struct {
+		timer   models.HNMTimer
+		windows models.HNMTimerWindows
+	}
 
+	rows := make([]timerRow, 0, len(timers))
 	for _, t := range timers {
-		w := models.BuildHNMTimerWindows(t)
+		rows = append(rows, timerRow{
+			timer:   t,
+			windows: models.BuildHNMTimerWindows(t),
+		})
+	}
 
+	sort.Slice(rows, func(i, j int) bool {
+		return rows[i].windows.NextRespawn.Before(rows[j].windows.NextRespawn)
+	})
+
+	fields := make([]*discordgo.MessageEmbedField, 0, len(rows))
+
+	for _, row := range rows {
+		t := row.timer
+		w := row.windows
+
+		name := models.BuildHNMTimerName(t)
 		value := fmt.Sprintf(
-			"Last kill: <t:%d:R>\nNext respawn: <t:%d:R>",
-			t.LastKill.Unix(),
+			"<t:%d:T> <t:%d:R>",
+			w.NextRespawn.Unix(),
 			w.NextRespawn.Unix(),
 		)
 
 		fields = append(fields, &discordgo.MessageEmbedField{
-			Name:   t.HNM.Name,
-			Value:  value,
+			Value:  name + " " + value,
 			Inline: false,
 		})
 	}
 
 	return &discordgo.MessageEmbed{
 		Title:  "HNM Camp Timers",
-		Color:  0x00FF99,
+		Color:  color,
 		Fields: fields,
 	}
 }

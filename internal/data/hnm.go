@@ -16,6 +16,7 @@ type HNMTimerRecord struct {
 	LastKill    time.Time
 	DaysSinceHQ int
 	IsNotified  bool
+	Mod         string
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
 }
@@ -33,6 +34,7 @@ type Store struct {
 func NewTimerFromRecord(rec HNMTimerRecord, hnm models.HNM) models.HNMTimer {
 	return models.HNMTimer{
 		HNM:         hnm,
+		Mod:         rec.Mod,
 		LastKill:    rec.LastKill,
 		DaysSinceHQ: rec.DaysSinceHQ,
 	}
@@ -58,6 +60,7 @@ func NewRecordFromHNMTimer(guildID, channelID string, t models.HNMTimer) HNMTime
 		LastKill:    t.LastKill,
 		DaysSinceHQ: t.DaysSinceHQ,
 		IsNotified:  false,
+		Mod:         t.Mod,
 	}
 }
 
@@ -74,12 +77,13 @@ func (s *Store) UpsertHNMTimerRecord(rec HNMTimerRecord) (HNMTimerRecord, error)
 
 	const q = `
 		INSERT INTO hnm_timers (
-			id, guild_id, channel_id, hnm_id, last_kill, days_since_hq, is_notified, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+			id, guild_id, channel_id, hnm_id, last_kill, days_since_hq, is_notified, mod, created_at, updated_at
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 		ON CONFLICT(guild_id, channel_id, hnm_id) DO UPDATE SET
 			last_kill     = excluded.last_kill,
 			days_since_hq = excluded.days_since_hq,
 			is_notified   = excluded.is_notified,
+			mod			  = excluded.mod,
 			updated_at    = excluded.updated_at
 	`
 
@@ -90,14 +94,14 @@ func (s *Store) UpsertHNMTimerRecord(rec HNMTimerRecord) (HNMTimerRecord, error)
 	_, err := s.DB.Exec(q,
 		rec.ID, rec.GuildID, rec.ChannelID, rec.HNMID,
 		toStrTime(rec.LastKill), rec.DaysSinceHQ, isNotifiedInt,
-		toStrTime(rec.CreatedAt), toStrTime(rec.UpdatedAt),
+		rec.Mod, toStrTime(rec.CreatedAt), toStrTime(rec.UpdatedAt),
 	)
 	return rec, err
 }
 
 func (s *Store) GetHNMTimerRecord(guildID, channelID, hnmID string) (HNMTimerRecord, bool, error) {
 	const q = `
-	SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq, is_notified, created_at, updated_at
+	SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq, is_notified, mod, created_at, updated_at
 	FROM hnm_timers
 	WHERE guild_id = ? AND channel_id = ? AND hnm_id = ?
 	`
@@ -112,7 +116,8 @@ func (s *Store) GetHNMTimerRecord(guildID, channelID, hnmID string) (HNMTimerRec
 
 	err := s.DB.QueryRow(q, guildID, channelID, hnmID).Scan(
 		&rec.ID, &rec.GuildID, &rec.ChannelID, &rec.HNMID,
-		&lastKillStr, &rec.DaysSinceHQ, &isNotified, &createdAtStr, &updatedAtStr,
+		&lastKillStr, &rec.DaysSinceHQ, &isNotified, &rec.Mod,
+		&createdAtStr, &updatedAtStr,
 	)
 
 	rec.IsNotified = isNotified != 0
@@ -142,7 +147,7 @@ func (s *Store) GetHNMTimerRecord(guildID, channelID, hnmID string) (HNMTimerRec
 
 func (s *Store) ListHNMTimerRecords(guildID, channelID string) ([]HNMTimerRecord, error) {
 	const q = `
-		SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq, is_notified, created_at, updated_at
+		SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq, is_notified, mod, created_at, updated_at
 		FROM hnm_timers
 		WHERE guild_id = ? AND channel_id = ?
 		ORDER BY hnm_id
@@ -165,7 +170,8 @@ func (s *Store) ListHNMTimerRecords(guildID, channelID string) ([]HNMTimerRecord
 		)
 		if err := rows.Scan(
 			&rec.ID, &rec.GuildID, &rec.ChannelID, &rec.HNMID,
-			&lastKillStr, &rec.DaysSinceHQ, &isNotified, &createdAtStr, &updatedAtStr,
+			&lastKillStr, &rec.DaysSinceHQ, &isNotified, &rec.Mod,
+			&createdAtStr, &updatedAtStr,
 		); err != nil {
 			return nil, err
 		}

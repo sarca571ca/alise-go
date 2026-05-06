@@ -25,7 +25,7 @@ type CloseHandler func(
 
 type EnrageHandler func(
 	s *discordgo.Session,
-	i *discordgo.InteractionCreate,
+	ti *discordgo.InteractionCreate,
 	window int,
 )
 
@@ -73,7 +73,7 @@ func (CampCommand) SlashDef() *discordgo.ApplicationCommand {
 					},
 					{
 						Name:         "quality",
-						Description:  "Quality of the hnm claimed.",
+						Description:  "Quality of the hnm claimed [n(normal) or h(high)]",
 						Type:         discordgo.ApplicationCommandOptionString,
 						Required:     false, // Not required here but will fail if its a king later in the code
 						Autocomplete: true,

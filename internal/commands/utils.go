@@ -118,7 +118,7 @@ func resolveHNMMod(s *discordgo.Session, i *discordgo.InteractionCreate) (string
 func getNameOption(sub *discordgo.ApplicationCommandInteractionDataOption) string {
 	for _, opt := range sub.Options {
 		if opt.Name == "name" {
-			return opt.StringValue()
+			return strings.ToLower(opt.StringValue())
 		}
 	}
 	return ""
@@ -127,7 +127,7 @@ func getNameOption(sub *discordgo.ApplicationCommandInteractionDataOption) strin
 func getQualityOption(sub *discordgo.ApplicationCommandInteractionDataOption) string {
 	for _, opt := range sub.Options {
 		if opt.Name == "quality" {
-			return opt.StringValue()
+			return strings.ToLower(opt.StringValue())
 		}
 	}
 	return ""

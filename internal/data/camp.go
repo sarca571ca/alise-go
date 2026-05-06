@@ -186,14 +186,14 @@ func (s *Store) ListHNMCampChannels(guildID string) ([]HNMCampChannel, error) {
 	return out, rows.Err()
 }
 
-func (s *Store) ListHNMCampChannelsForDay(guildID, hnmID string, day time.Time) ([]HNMCampChannel, error) {
+func (s *Store) ListHNMCampChannelsForDay(guildID, hnmID string, timer time.Time) ([]HNMCampChannel, error) {
 	loc, err := time.LoadLocation("America/Los_Angeles")
 	if err != nil {
 		loc = time.UTC
 	}
 
-	day = day.In(loc)
-	start := time.Date(day.Year(), day.Month(), day.Day(), 0, 0, 0, 0, time.UTC)
+	today := timer.In(loc)
+	start := time.Date(today.Year(), today.Month(), today.Day(), 0, 0, 0, 0, time.UTC)
 	end := start.Add(24 * time.Hour)
 
 	const q = `

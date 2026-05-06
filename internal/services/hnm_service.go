@@ -148,8 +148,18 @@ func (s *HNMService) tickCamps() {
 			continue
 		}
 
-		name, seq, err := campNameAndSeq(s.store, guildID, timer)
+		name, seq, err := s.campNameAndSeq(s.store, guildID, timer)
 		if err != nil {
+			continue
+		}
+
+		ok, err = s.updateLastKill(guildID, timer)
+		if err != nil {
+			log.Println("lk error")
+			continue
+		}
+		if ok {
+			log.Println("ok error")
 			continue
 		}
 
@@ -162,6 +172,10 @@ func (s *HNMService) tickCamps() {
 		})
 		if err != nil {
 			continue
+		}
+
+		if _, err = s.updateChannelID(guildID, channel.ID, timer); err != nil {
+			log.Println("Record Update Error:", err)
 		}
 
 		msg := models.GetCampInfo(hnm, timer, firstWindow)
@@ -301,4 +315,91 @@ func (s *HNMService) MoveCampAfterDelay(channelID string, delay time.Duration) {
 	_, _ = s.dg.ChannelEdit(channelID, &discordgo.ChannelEdit{
 		ParentID: targetParent,
 	})
+}
+
+func (s *HNMService) campNameAndSeq(store *data.Store, guildID string, timer models.HNMTimer) (string, int, error) {
+	t := timer.LastKill.Add(timer.HNM.BaseRespawn)
+
+	mon := shortMonth(t)
+	day := t.Day()
+
+	short := hnmShortCode(timer.HNM)
+
+	hqSuffix := ""
+	if timer.HNM.HQName != "" {
+		hqSuffix = fmt.Sprintf("%d", timer.DaysSinceHQ+1)
+	}
+
+	existing, err := store.ListHNMCampChannelsForDay(guildID, timer.HNM.ID, t)
+	if err != nil {
+		return "", 0, err
+	}
+
+	seq := 0
+	if len(existing) > 0 {
+		for _, c := range existing {
+			if _, err := s.dg.Channel(c.ChannelID); err == nil && c.IsSpawned {
+				// Channel Exists and IsSpawned is true which implies it is a completed camp.
+				seq = seq + 1
+			}
+		}
+	}
+
+	seqSuffix := ""
+	if seq > 0 {
+		seqSuffix = fmt.Sprintf("%d", seq)
+	}
+
+	name := fmt.Sprintf("%s%d-%s%s%s", mon, day, short, hqSuffix, seqSuffix)
+	return name, seq, nil
+}
+
+func (s *HNMService) updateChannelID(guildID, channelID string, hnm models.HNMTimer) (bool, error) {
+	// this needs to either do nothing, update channel id if channel doesnt exist, or update lastkill if
+	//channel does exist
+	existing, err := s.store.ListHNMCampChannelsForDay(guildID, hnm.HNM.ID, hnm.LastKill.Add(hnm.HNM.BaseRespawn))
+	if err != nil {
+		return false, nil
+	}
+
+	for _, c := range existing {
+		if _, err := s.dg.Channel(c.ChannelID); err != nil && !c.IsSpawned {
+			c.ChannelID = channelID
+			if _, err = s.store.UpsertHNMCampChannel(c); err != nil {
+				return false, err
+			}
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (s *HNMService) updateLastKill(guildID string, hnm models.HNMTimer) (bool, error) {
+	existing, err := s.store.ListHNMCampChannelsForDay(guildID, hnm.HNM.ID, hnm.LastKill.Add(hnm.HNM.BaseRespawn))
+	if err != nil {
+		return false, nil
+	}
+
+	for _, c := range existing {
+		rec, ok, err := s.store.GetHNMCampChannelByChannelID(guildID, c.ChannelID)
+		if err != nil {
+			log.Println(err)
+			return false, err
+		}
+		if !ok {
+			log.Println("!ok")
+			return false, fmt.Errorf("Record not found")
+		}
+
+		rec.LastKill = hnm.LastKill
+		if _, err = s.store.UpsertHNMCampChannel(rec); err != nil {
+			// WARN: This error says Unique constraint on hnm_camp_channel.id might need to change the DB
+			log.Println("upsert", err)
+			return false, err
+		}
+		return true, nil
+	}
+	log.Println("not found?")
+	return false, nil
+
 }

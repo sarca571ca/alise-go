@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"log"
 	"strings"
 	"time"
 
@@ -112,6 +113,7 @@ func (cmd HNMCommand) HandleInteraction(s *discordgo.Session, i *discordgo.Inter
 
 	hnmTimer, err := models.ParseHNMCommandInput(&hnmInput, time.Now())
 	if err != nil {
+		log.Println(err)
 		return
 	}
 
@@ -132,7 +134,7 @@ func (cmd HNMCommand) HandleAutoCompleteCommand(
 			{Name: "Adamantoise", Value: "adamantoise"},
 			{Name: "Behemoth", Value: "behemoth"},
 			{Name: "Tiamat", Value: "tiamat"},
-			{Name: "Jormundgand", Value: "jormundgand"},
+			{Name: "Jormungand", Value: "jormungand"},
 			{Name: "Vrtra", Value: "vrtra"},
 			{Name: "King Arthro", Value: "ka"},
 			{Name: "King Vinegarron", Value: "kv"},

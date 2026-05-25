@@ -45,6 +45,7 @@ func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
 			)
 
 			_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading("Pop"))
+			_, _ = b.dg.ChannelMessageSend(i.ChannelID, "Moving channel to awaiting-processing in 5 minutes.")
 			go b.hnm.MoveCampAfterDelay(camp.ChannelID, 5*time.Minute)
 		},
 		Open: func(s *discordgo.Session, i *discordgo.InteractionCreate) {

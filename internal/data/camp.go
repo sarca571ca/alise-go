@@ -60,22 +60,27 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 		seq, mod, is_closed, is_enraged, is_spawned, last_window_idx, move_scheduled,
 		created_at, updated_at
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	ON CONFLICT(guild_id, hnm_id, last_kill, days_since_hq) DO UPDATE SET
-		last_kill       = excluded.last_kill,
-		days_since_hq   = excluded.days_since_hq,
-		seq             = excluded.seq,
-		mod             = excluded.mod,
-		is_closed       = excluded.is_closed,
-		is_enraged      = excluded.is_enraged,
-		is_spawned		= excluded.is_spawned,
-		last_window_idx = excluded.last_window_idx,
-		move_scheduled  = excluded.move_scheduled,
-		updated_at      = excluded.updated_at
+	ON CONFLICT (id) DO UPDATE SET
+		guild_id       = EXCLUDED.guild_id,
+		channel_id     = EXCLUDED.channel_id,
+		hnm_id         = EXCLUDED.hnm_id,
+		last_kill      = EXCLUDED.last_kill,
+		days_since_hq  = EXCLUDED.days_since_hq,
+		seq            = EXCLUDED.seq,
+		mod            = EXCLUDED.mod,
+		is_closed      = EXCLUDED.is_closed,
+		is_enraged     = EXCLUDED.is_enraged,
+		is_spawned     = EXCLUDED.is_spawned,
+		last_window_idx = EXCLUDED.last_window_idx,
+		move_scheduled = EXCLUDED.move_scheduled,
+		updated_at     = EXCLUDED.updated_at
 	`
 
-	_, err := s.DB.Exec(q, ch.ID, ch.GuildID, ch.ChannelID, ch.HNMID, toStrTime(ch.LastKill),
-		ch.DaysSinceHQ, ch.Seq, ch.Mod, isClosed, isEnraged, isSpawned, ch.LastWindowIdx, moveScheduled,
-		toStrTime(ch.CreatedAt), toStrTime(ch.UpdatedAt),
+	_, err := s.DB.Exec(
+		q,
+		ch.ID, ch.GuildID, ch.ChannelID, ch.HNMID, toStrTime(ch.LastKill),
+		ch.DaysSinceHQ, ch.Seq, ch.Mod, isClosed, isEnraged, isSpawned,
+		ch.LastWindowIdx, moveScheduled, toStrTime(ch.CreatedAt), toStrTime(ch.UpdatedAt),
 	)
 
 	return ch, err

@@ -139,30 +139,89 @@ func (s *HNMService) tickCamps() {
 			continue
 		}
 
-		camp, found, err := s.store.GetHNMCampChannelByCamp(
+		name, seq, err := s.campNameAndSeq(s.store, guildID, timer)
+		if err != nil {
+			continue
+		}
+
+		camp, found, err := s.store.GetHNMCampChannelByRange(
 			guildID,
 			hnm.ID,
-			timer.LastKill,
-			timer.DaysSinceHQ,
+			timer.LastKill.Add(-hnm.BaseRespawn/2),
+			timer.LastKill.Add(hnm.BaseRespawn/2),
 		)
 		if err != nil {
 			continue
 		}
 
 		if found && camp.ChannelID != "" {
-			if _, err := s.dg.Channel(camp.ChannelID); err == nil {
-				continue
-			}
-
-			camp.ChannelID = ""
-			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
-				log.Println("clear stale ChannelID error:", err)
-				continue
-			}
+			continue
 		}
 
+		// wins := models.BuildHNMTimerWindows(timer)
 		name, seq, err := s.campNameAndSeq(s.store, guildID, timer)
 		if err != nil {
+			// if found {
+			// 	if camp.ChannelID != "" {
+			// 		if _, err := s.dg.Channel(camp.ChannelID); err == nil {
+			// 			camp.LastKill = timer.LastKill
+			// 			camp.DaysSinceHQ = timer.DaysSinceHQ
+			// 			camp.Seq = seq
+			// 			camp.Mod = timer.Mod
+			// 			camp.LastWindowIdx = lastCompletedWindowIndex(now, wins)
+			//
+			// 			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+			// 				log.Println("update existing live camp error:", err)
+			// 			}
+			// 			continue
+			// 		}
+			//
+			// 		camp.ChannelID = ""
+			// 		if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+			// 			log.Println("clear stale ChannelID error:", err)
+			// 			continue
+			// 		}
+			// 	}
+			//
+			// 	parentID := s.cfg.Categories.HNMCategoryID
+			//
+			// 	channel, err := s.dg.GuildChannelCreateComplex(guildID, discordgo.GuildChannelCreateData{
+			// 		Name:     name,
+			// 		Type:     discordgo.ChannelTypeGuildText,
+			// 		ParentID: parentID,
+			// 	})
+			// 	if err != nil {
+			// 		continue
+			// 	}
+			//
+			// 	camp.ChannelID = channel.ID
+			// 	camp.LastKill = timer.LastKill
+			// 	camp.DaysSinceHQ = timer.DaysSinceHQ
+			// 	camp.Seq = seq
+			// 	camp.Mod = timer.Mod
+			// 	camp.LastWindowIdx = lastCompletedWindowIndex(now, wins)
+			// 	camp.MoveScheduled = false
+			//
+			// 	if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+			// 		log.Println("Upsert existing camp error:", err)
+			// 		continue
+			// 	}
+			//
+			// 	msg := models.GetCampInfo(hnm, timer, firstWindow)
+			//
+			// 	_, err = s.dg.ChannelMessageSendComplex(channel.ID, msg)
+			// 	if err != nil {
+			// 		log.Println("EmbedSend Error:", err)
+			// 	}
+			//
+			// 	_, err = s.dg.ChannelMessageSend(
+			// 		channel.ID,
+			// 		formatting.FormatWindowHeading("Window opens in 20 Minutes x-in"),
+			// 	)
+			// 	if err != nil {
+			// 		log.Println("MsgSend Error: ", err)
+			// 	}
+
 			continue
 		}
 
@@ -184,36 +243,32 @@ func (s *HNMService) tickCamps() {
 		}
 
 		if reused {
-			if _, err = s.updateChannelID(guildID, channel.ID, timer); err != nil {
-				log.Println("Record Update Error:", err)
-			}
-		} else if found {
-			camp.ChannelID = channel.ID
-			camp.Seq = seq
-			camp.Mod = timer.Mod
-
-			if _, err = s.store.UpsertHNMCampChannel(camp); err != nil {
-				log.Println("Upsert existing camp error:", err)
-			}
-		} else {
-			chRecord := data.HNMCampChannel{
-				GuildID:       guildID,
-				ChannelID:     channel.ID,
-				HNMID:         hnm.ID,
-				LastKill:      timer.LastKill,
-				DaysSinceHQ:   timer.DaysSinceHQ,
-				Seq:           seq,
-				Mod:           timer.Mod,
-				IsClosed:      false,
-				IsEnraged:     false,
-				IsSpawned:     false,
-				LastWindowIdx: 0,
-				MoveScheduled: false,
-			}
-
-			if _, err = s.store.UpsertHNMCampChannel(chRecord); err != nil {
-				log.Println("UpsertHNMCampChannel error:", err)
-			}
+			log.Println("ok error")
+			continue
+			// 	if _, err = s.updateChannelID(guildID, channel.ID, timer); err != nil {
+			// 		log.Println("Record Update Error:", err)
+			// 		continue
+			// 	}
+			// } else {
+			// 	chRecord := data.HNMCampChannel{
+			// 		GuildID:       guildID,
+			// 		ChannelID:     channel.ID,
+			// 		HNMID:         hnm.ID,
+			// 		LastKill:      timer.LastKill,
+			// 		DaysSinceHQ:   timer.DaysSinceHQ,
+			// 		Seq:           seq,
+			// 		Mod:           timer.Mod,
+			// 		IsClosed:      false,
+			// 		IsEnraged:     false,
+			// 		IsSpawned:     false,
+			// 		LastWindowIdx: 0,
+			// 		MoveScheduled: false,
+			// 	}
+			//
+			// 	if _, err = s.store.UpsertHNMCampChannel(chRecord); err != nil {
+			// 		log.Println("UpsertHNMCampChannel error:", err)
+			// 		continue
+			// 	}
 		}
 
 		msg := models.GetCampInfo(hnm, timer, firstWindow)
@@ -259,12 +314,7 @@ func (s *HNMService) tickCampWindows() {
 			continue
 		}
 
-		hnm, ok := models.GetHNM(camp.HNMID)
-		if !ok {
-			continue
-		}
-
-		if !hnm.KeepCampOpenUntilPop && shouldArchiveCamp(camp, timerRec) {
+		if shouldArchiveCamp(camp, timerRec) {
 			if err := s.store.DeleteHNMCampChannel(camp.ID); err != nil {
 				log.Println("DeleteHNMCampChannel error:", err)
 			}
@@ -272,6 +322,11 @@ func (s *HNMService) tickCampWindows() {
 		}
 
 		if camp.IsClosed {
+			continue
+		}
+
+		hnm, ok := models.GetHNM(camp.HNMID)
+		if !ok {
 			continue
 		}
 
@@ -294,7 +349,7 @@ func (s *HNMService) tickCampWindows() {
 			continue
 		}
 
-		if now.After(lastWin) && !camp.IsEnraged && !hnm.KeepCampOpenUntilPop {
+		if now.After(lastWin) && !camp.IsEnraged {
 			content := "Moving channel to awaiting-processing in 5 minutes."
 			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
 
@@ -308,7 +363,20 @@ func (s *HNMService) tickCampWindows() {
 		}
 
 		idx := currentWindowIndex(now, wins)
-		if idx == 0 || idx <= camp.LastWindowIdx {
+		if idx == 0 {
+			continue
+		}
+
+		// Self-heal old/bad persisted values so we don't spam the same window forever.
+		if camp.LastWindowIdx > idx {
+			camp.LastWindowIdx = idx
+			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+				continue
+			}
+			continue
+		}
+
+		if idx <= camp.LastWindowIdx {
 			continue
 		}
 
@@ -407,27 +475,32 @@ func (s *HNMService) updateLastKill(guildID string, hnm models.HNMTimer) (bool, 
 	for _, c := range existing {
 		rec, ok, err := s.store.GetHNMCampChannelByChannelID(guildID, c.ChannelID)
 		if err != nil {
+			log.Println(err)
 			return false, err
 		}
 		if !ok {
-			return false, fmt.Errorf("record not found")
+			return false, fmt.Errorf("Record not found")
 		}
 
 		rec.LastKill = hnm.LastKill
-		rec.DaysSinceHQ = hnm.DaysSinceHQ
-
 		if _, err = s.store.UpsertHNMCampChannel(rec); err != nil {
 			return false, err
 		}
 		return true, nil
 	}
 	return false, nil
+
 }
 
-func lastCompletedWindowIndex(now time.Time, wins models.HNMTimerWindows) int {
-	idx := currentWindowIndex(now, wins)
-	if idx <= 0 {
-		return 0
+func (s *HNMService) getLastWindowIdx(windowInterval int, respawn time.Time) int {
+	now := time.Now()
+
+	elapsed := now.Sub(respawn)
+	idx := int(elapsed / time.Duration(windowInterval))
+	idx = idx - 1
+	if idx < 0 {
+		idx = 0
 	}
-	return idx - 1
+
+	return idx
 }

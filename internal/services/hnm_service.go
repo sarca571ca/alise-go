@@ -36,6 +36,7 @@ func (s *HNMService) StartPolling(stop <-chan struct{}) {
 				s.tickCamps()
 				s.checkTimers()
 				s.tickCampWindows()
+				s.tickGrandWyrmWindows()
 			case <-stop:
 				return
 			}
@@ -80,6 +81,7 @@ func (s *HNMService) checkTimers() {
 		if _, err := s.store.UpsertHNMTimerRecord(r); err != nil {
 			continue
 		}
+		// TODO: need to add a removal of old timers. standard is 3 days old they get removed
 	}
 }
 
@@ -265,7 +267,6 @@ func (s *HNMService) tickCampWindows() {
 		}
 
 		if hnm.UseHourlyWarningFlow {
-			s.tickGrandWyrmWindows(camp, timerRec, hnm, now)
 			continue
 		}
 
@@ -299,8 +300,10 @@ func (s *HNMService) tickCampWindows() {
 			continue
 		}
 
+		idx := currentWindowIndex(now, wins)
 		if now.After(lastWin) && !camp.IsEnraged && !hnm.KeepCampOpenUntilPop {
-			content := "Moving channel to awaiting-processing in 5 minutes."
+			content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", idx)) +
+				"\nMoving channel to awaiting-processing in 5 minutes."
 			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
 
 			camp.MoveScheduled = true
@@ -312,7 +315,6 @@ func (s *HNMService) tickCampWindows() {
 			continue
 		}
 
-		idx := currentWindowIndex(now, wins)
 		if idx == 0 || idx <= camp.LastWindowIdx {
 			continue
 		}
@@ -330,42 +332,117 @@ func (s *HNMService) tickCampWindows() {
 	}
 }
 
-func (s *HNMService) tickGrandWyrmWindows(
-	camp data.HNMCampChannel,
-	timer data.HNMTimerRecord,
-	hnm models.HNM,
-	now time.Time,
-) {
-	respawn := timer.LastKill.Add(hnm.BaseRespawn)
+func (s *HNMService) tickGrandWyrmWindows() {
+	guildID := s.cfg.GuildID
+	if guildID == "" {
+		log.Println("No guildID")
+		return
+	}
 
-	for i := 1; i <= hnm.WindowCount; i++ {
-		windowStart := respawn.Add(time.Duration(i-1) * hnm.WindowInterval)
-		warnAt := windowStart.Add(-time.Duration(hnm.WarnBeforeWindow) * time.Minute)
-		cutoffAt := windowStart.Add(time.Duration(hnm.CutoffAfterWindow) * time.Minute)
+	camps, err := s.store.ListHNMCampChannels(guildID)
+	if err != nil {
+		log.Println("Error:", err)
+		return
+	}
 
-		if !now.Before(warnAt) && camp.LastWarnedWindowIdx < i {
-			_, _ = s.dg.ChannelMessageSend(
-				camp.ChannelID,
-				formatting.FormatWindowHeading(
-					fmt.Sprintf("Window %d opens in %d minutes x-in", i, hnm.WarnBeforeWindow),
-				),
-			)
-			camp.LastWarnedWindowIdx = i
-			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
-				log.Println("save warning idx error:", err)
-			}
+	now := time.Now()
+
+	for _, camp := range camps {
+		timerChannelID := s.cfg.Channels.HNMTimes
+		timerRec, ok, err := s.store.GetHNMTimerRecord(guildID, timerChannelID, camp.HNMID)
+		if err != nil {
+			log.Println("GetHNMTimerRecord error:", err)
+			continue
+		}
+		if !ok {
+			continue
 		}
 
-		if !now.Before(cutoffAt) && camp.LastCutoffWindowIdx < i {
-			_, _ = s.dg.ChannelMessageSend(
-				camp.ChannelID,
-				formatting.FormatWindowHeading(
-					fmt.Sprintf("Window %d cutoff x-in", i),
-				),
-			)
-			camp.LastCutoffWindowIdx = i
+		hnm, ok := models.GetHNM(camp.HNMID)
+		if !ok {
+			continue
+		}
+
+		if !hnm.UseHourlyWarningFlow {
+			continue
+		}
+
+		if !hnm.KeepCampOpenUntilPop && shouldArchiveCamp(camp, timerRec) {
+			if err := s.store.DeleteHNMCampChannel(camp.ID); err != nil {
+				log.Println("DeleteHNMCampChannel error:", err)
+			}
+			continue
+		}
+
+		if camp.IsClosed {
+			continue
+		}
+
+		timer := data.NewTimerFromRecord(
+			data.HNMTimerRecord{
+				LastKill:    camp.LastKill,
+				DaysSinceHQ: camp.DaysSinceHQ,
+			},
+			hnm,
+		)
+
+		wins := models.BuildHNMTimerWindows(timer)
+		if len(wins.Windows) == 0 {
+			continue
+		}
+
+		lastWin := wins.Windows[len(wins.Windows)-1]
+
+		if camp.MoveScheduled {
+			continue
+		}
+
+		idx := currentWindowIndex(now, wins)
+		if now.After(lastWin) && !camp.IsEnraged && !hnm.KeepCampOpenUntilPop {
+			content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", idx)) +
+				"\nMoving channel to awaiting-processing in 5 minutes."
+			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
+
+			camp.MoveScheduled = true
 			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
-				log.Println("save cutoff idx error:", err)
+				continue
+			}
+
+			go s.MoveCampAfterDelay(camp.ChannelID, 5*time.Minute)
+			continue
+		}
+
+		respawn := camp.LastKill.Add(hnm.BaseRespawn)
+
+		for i := 1; i <= hnm.WindowCount; i++ {
+			windowStart := respawn.Add(time.Duration(i-1) * hnm.WindowInterval)
+			warnAt := windowStart.Add(-time.Duration(hnm.WarnBeforeWindow))
+			cutoffAt := windowStart.Add(time.Duration(hnm.CutoffAfterWindow))
+
+			if !now.Before(warnAt) && camp.LastWarnedWindowIdx < i {
+				_, _ = s.dg.ChannelMessageSend(
+					camp.ChannelID,
+					formatting.FormatWindowHeading(
+						fmt.Sprintf("Window %d opens in %d minutes x-in", i, hnm.WarnBeforeWindow),
+					),
+				)
+				camp.LastWarnedWindowIdx = i
+				if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+					log.Println("save warning idx error:", err)
+				}
+			}
+
+			if !now.Before(cutoffAt) && camp.LastCutoffWindowIdx < i {
+				_, _ = s.dg.ChannelMessageSend(
+					camp.ChannelID,
+					formatting.FormatWindowHeading(
+						fmt.Sprintf("Window %d closed no more x-in", i),
+					),
+				)
+				camp.LastCutoffWindowIdx = i
+				if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+					log.Println("save cutoff idx error:", err)
+				}
 			}
 		}
 	}

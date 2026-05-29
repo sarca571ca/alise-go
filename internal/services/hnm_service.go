@@ -305,16 +305,9 @@ func (s *HNMService) tickCampWindows() {
 
 		idx := currentWindowIndex(now, wins)
 		if now.After(lastWin) && !camp.IsEnraged && !hnm.KeepCampOpenUntilPop {
-			content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", camp.LastWindowIdx+1)) +
-				"\nMoving channel to awaiting-processing in 5 minutes."
+			content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", camp.LastWindowIdx+1))
 			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
 
-			camp.MoveScheduled = true
-			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
-				continue
-			}
-
-			go s.MoveCampAfterDelay(camp.ChannelID, 5*time.Minute)
 			continue
 		}
 
@@ -400,18 +393,7 @@ func (s *HNMService) tickGrandWyrmWindows() {
 			continue
 		}
 
-		idx := currentWindowIndex(now, wins)
 		if now.After(lastWin) && !camp.IsEnraged && !hnm.KeepCampOpenUntilPop {
-			content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", idx)) +
-				"\nMoving channel to awaiting-processing in 5 minutes."
-			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
-
-			camp.MoveScheduled = true
-			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
-				continue
-			}
-
-			go s.MoveCampAfterDelay(camp.ChannelID, 5*time.Minute)
 			continue
 		}
 
@@ -426,7 +408,7 @@ func (s *HNMService) tickGrandWyrmWindows() {
 				_, _ = s.dg.ChannelMessageSend(
 					camp.ChannelID,
 					formatting.FormatWindowHeading(
-						fmt.Sprintf("Window %d opens in %d minutes x-in", i, hnm.WarnBeforeWindow),
+						fmt.Sprintf("Window %d opens in 5 minutes x-in", i),
 					),
 				)
 				camp.LastWarnedWindowIdx = i

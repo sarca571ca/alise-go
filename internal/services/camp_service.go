@@ -25,7 +25,7 @@ func NewCampService(store *data.Store, cfg config.Config, dg *discordgo.Session)
 	}
 }
 
-func (s *CampService) Pop(guildID, lsName string, ch *discordgo.Channel) (data.HNMCampChannel, error) {
+func (s *CampService) Pop(guildID, lsName, quality string, ch *discordgo.Channel) (data.HNMCampChannel, error) {
 	if err := s.validateCampChannel(*ch); err != nil {
 		return data.HNMCampChannel{}, err
 	}
@@ -49,6 +49,10 @@ func (s *CampService) Pop(guildID, lsName string, ch *discordgo.Channel) (data.H
 	hnm, ok := models.GetHNM(camp.HNMID)
 	if !ok {
 		return data.HNMCampChannel{}, fmt.Errorf("failed to resolve HNM for this camp")
+	}
+
+	if !(hnm.HQName == "") && quality == "" {
+		return data.HNMCampChannel{}, fmt.Errorf("kings require the quality to be entered nq/hq")
 	}
 
 	rec, ok, err := s.store.GetLinkshellRecord(guildID, lsName)

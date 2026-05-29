@@ -25,7 +25,7 @@ func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
 				return
 			}
 
-			camp, err := b.camp.Pop(i.GuildID, lsName, ch)
+			camp, err := b.camp.Pop(i.GuildID, lsName, quality, ch)
 			if err != nil {
 				respondEphemeral(s, i, err.Error())
 				return

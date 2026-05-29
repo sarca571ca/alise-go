@@ -305,7 +305,7 @@ func (s *HNMService) tickCampWindows() {
 
 		idx := currentWindowIndex(now, wins)
 		if now.After(lastWin) && !camp.IsEnraged && !hnm.KeepCampOpenUntilPop {
-			content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", idx)) +
+			content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", camp.LastWindowIdx+1)) +
 				"\nMoving channel to awaiting-processing in 5 minutes."
 			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
 

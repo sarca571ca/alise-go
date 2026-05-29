@@ -225,12 +225,15 @@ func (s *HNMService) tickCamps() {
 			log.Println("EmbedSend Error:", err)
 		}
 
-		_, err = s.dg.ChannelMessageSend(
-			channel.ID,
-			formatting.FormatWindowHeading("Window opens in 20 Minutes x-in"),
-		)
-		if err != nil {
-			log.Println("MsgSend Error: ", err)
+		if !hnm.UseHourlyWarningFlow {
+			_, err = s.dg.ChannelMessageSend(
+				channel.ID,
+				formatting.FormatWindowHeading("Window opens in 20 Minutes x-in"),
+			)
+			if err != nil {
+				log.Println("MsgSend Error: ", err)
+			}
+
 		}
 	}
 }

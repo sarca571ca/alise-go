@@ -308,6 +308,10 @@ func (s *HNMService) tickCampWindows() {
 			content := formatting.FormatWindowHeading(fmt.Sprintf("Window %d", camp.LastWindowIdx+1))
 			_, _ = s.dg.ChannelMessageSend(camp.ChannelID, content)
 
+			camp.IsClosed = true
+			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+				continue
+			}
 			continue
 		}
 

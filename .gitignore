@@ -1,3 +1,4 @@
 .env
 alise.db
 commit.txt
+build/

@@ -152,15 +152,26 @@ func (s *HNMService) tickCamps() {
 		}
 
 		if found && camp.ChannelID != "" {
-			if _, err := s.dg.Channel(camp.ChannelID); err == nil {
+			ch, err := s.dg.Channel(camp.ChannelID)
+			if err == nil && ch != nil {
 				continue
 			}
 
-			camp.ChannelID = ""
-			if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
-				log.Println("clear stale ChannelID error:", err)
-				continue
+			if restErr, ok := err.(*discordgo.RESTError); ok &&
+				restErr.Response != nil &&
+				restErr.Response.StatusCode == 404 {
+				camp.ChannelID = ""
+				if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
+					log.Println("clear stale ChannelID error:", err)
+					continue
+				}
 			}
+
+			log.Printf("Channel lookup error: campID=%s | channelID=%s | err=%v",
+				camp.ID,
+				camp.ChannelID,
+				err)
+			continue
 		}
 
 		name, seq, err := s.campNameAndSeq(s.store, guildID, timer)
@@ -189,6 +200,7 @@ func (s *HNMService) tickCamps() {
 			if _, err = s.updateChannelID(guildID, channel.ID, timer); err != nil {
 				log.Println("Record Update Error:", err)
 			}
+			log.Println("reused the timer and updated the channelid")
 		} else if found {
 			camp.ChannelID = channel.ID
 			camp.Seq = seq
@@ -405,8 +417,8 @@ func (s *HNMService) tickGrandWyrmWindows() {
 
 		for i := 1; i <= hnm.WindowCount; i++ {
 			windowStart := respawn.Add(time.Duration(i-1) * hnm.WindowInterval)
-			warnAt := windowStart.Add(-time.Duration(hnm.WarnBeforeWindow))
-			cutoffAt := windowStart.Add(time.Duration(hnm.CutoffAfterWindow))
+			warnAt := windowStart.Add(-hnm.WarnBeforeWindow)
+			cutoffAt := windowStart.Add(hnm.CutoffAfterWindow)
 
 			if !now.Before(warnAt) && camp.LastWarnedWindowIdx < i {
 				_, _ = s.dg.ChannelMessageSend(

@@ -63,7 +63,7 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 		last_warned_window_idx, last_cutoff_window_idx, move_scheduled,
 		created_at, updated_at
 	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-	ON CONFLICT (id) DO UPDATE SET
+	ON CONFLICT (guild_id, hnm_id, last_kill, days_since_hq) DO UPDATE SET
 		guild_id       			= EXCLUDED.guild_id,
 		channel_id     			= EXCLUDED.channel_id,
 		hnm_id         			= EXCLUDED.hnm_id,

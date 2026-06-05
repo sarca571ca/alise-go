@@ -473,7 +473,7 @@ func (s *HNMService) campNameAndSeq(store *data.Store, guildID string, timer mod
 
 	hqSuffix := ""
 	if timer.HNM.HQName != "" {
-		hqSuffix = fmt.Sprintf("%d", timer.DaysSinceHQ+1)
+		hqSuffix = fmt.Sprintf("%d", timer.DaysSinceHQ)
 	}
 
 	existing, err := store.ListHNMCampChannelsForDay(guildID, timer.HNM.ID, t)
@@ -485,7 +485,6 @@ func (s *HNMService) campNameAndSeq(store *data.Store, guildID string, timer mod
 	if len(existing) > 0 {
 		for _, c := range existing {
 			if _, err := s.dg.Channel(c.ChannelID); err == nil && c.IsSpawned {
-				// Channel Exists and IsSpawned is true which implies it is a completed camp.
 				seq = seq + 1
 			}
 		}

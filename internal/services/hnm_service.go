@@ -473,7 +473,9 @@ func (s *HNMService) campNameAndSeq(store *data.Store, guildID string, timer mod
 
 	hqSuffix := ""
 	if timer.HNM.HQName != "" {
+		log.Println("hqDay:", timer.DaysSinceHQ)
 		hqSuffix = fmt.Sprintf("%d", timer.DaysSinceHQ)
+		log.Println("hqSuffix:", hqSuffix)
 	}
 
 	existing, err := store.ListHNMCampChannelsForDay(guildID, timer.HNM.ID, t)

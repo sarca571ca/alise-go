@@ -121,7 +121,7 @@ func (b *Bot) handleHNMCommand(s *discordgo.Session, i *discordgo.InteractionCre
 	}
 
 	guildID := i.GuildID
-	channelID := i.ChannelID // This needs to change to a specified channel
+	channelID := i.ChannelID // TODO: This needs to change to a specified channel
 
 	rec := data.NewRecordFromHNMTimer(guildID, channelID, timer)
 

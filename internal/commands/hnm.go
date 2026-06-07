@@ -85,9 +85,9 @@ func (cmd HNMCommand) HandleInteraction(s *discordgo.Session, i *discordgo.Inter
 	dayOpt := data.GetOption("day")
 	var day int
 	if dayOpt == nil {
-		day = 0
+		day = 1
 	} else {
-		day = int(dayOpt.IntValue()) + 1 // add a day since this will be for the next day
+		day = int(dayOpt.IntValue()) + 1
 	}
 
 	// HNM Date

@@ -12,6 +12,11 @@ import (
 func (b *Bot) buildHnmCommand(cfg config.Config) commands.Command {
 	hnmCmd := commands.HNMCommand{
 		OnParsed: func(s *discordgo.Session, i *discordgo.InteractionCreate, timer models.HNMTimer) {
+			if i.ChannelID != cfg.Channels.BotCommands {
+				respondEphemeral(s, i, "Must be used in the bot-commands channel")
+				return
+			}
+
 			guildID := i.GuildID
 			channelID := cfg.Channels.HNMTimes
 

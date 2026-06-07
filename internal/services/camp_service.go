@@ -6,6 +6,7 @@ import (
 	"alise-go/internal/formatting"
 	"alise-go/internal/models"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/bwmarrin/discordgo"
@@ -63,7 +64,11 @@ func (s *CampService) Pop(guildID, lsName, quality string, ch *discordgo.Channel
 		return data.HNMCampChannel{}, fmt.Errorf("linkshell %q does not exist, use /linkshell list to see available options", lsName)
 	}
 
-	rec, err = s.incrementLinkshellClaim(rec, hnm.ID)
+	claimedHNM := hnm.ID
+	if quality == "hq" && hnm.HQName != "" {
+		claimedHNM = strings.ToLower(hnm.HQName)
+	}
+	rec, err = s.incrementLinkshellClaim(rec, claimedHNM)
 	if err != nil {
 		return data.HNMCampChannel{}, err
 	}
@@ -105,10 +110,16 @@ func (s *CampService) incrementLinkshellClaim(
 	switch hnmID {
 	case "fafnir":
 		rec.FafnirClaims++
+	case "nidhogg":
+		rec.NidhoggClaims++
 	case "adamantoise":
 		rec.AdamantoiseClaims++
+	case "aspidochelone":
+		rec.AspidocheloneClaims++
 	case "behemoth":
 		rec.BehemothClaims++
+	case "king behemoth":
+		rec.KingBehemothClaims++
 	case "tiamat":
 		rec.TiamatClaims++
 	case "jorm":

@@ -29,6 +29,12 @@ type LinkshellRecord struct {
 	ArchivedAt            time.Time
 }
 
+type LinkshellLeaderBoard struct {
+	GuildID   string
+	ChannelID string
+	MessageID string
+}
+
 func (s *Store) NewRecordFromLinkshellEntry(guildID string, cmdInput string) LinkshellRecord {
 	return LinkshellRecord{
 		GuildID:       guildID,
@@ -341,5 +347,39 @@ func (s *Store) RestoreLinkshellRecord(guildID, linkshellName string) (Linkshell
 func (s *Store) DeleteLinkshellArchiveRecord(guildID, linkshellName string) error {
 	const q = `DELETE FROM linkshells_archive WHERE guild_id = ? AND linkshell_name = ?`
 	_, err := s.DB.Exec(q, guildID, linkshellName)
+	return err
+}
+
+func (s *Store) GetLinkshellLeaderBoard(guildID, channelID string) (LinkshellLeaderBoard, bool, error) {
+	const q = `
+	SELECT guild_id, channel_id, message_id
+	FROM linkshell_leader_boards
+	WHERE guild_id = ? AND channel_id = ?
+	`
+
+	var board LinkshellLeaderBoard
+	err := s.DB.QueryRow(q, guildID, channelID).Scan(
+		&board.GuildID,
+		&board.ChannelID,
+		&board.MessageID,
+	)
+	if err == sql.ErrNoRows {
+		return LinkshellLeaderBoard{}, false, nil
+	}
+	if err != nil {
+		return LinkshellLeaderBoard{}, false, err
+	}
+	return board, true, nil
+}
+
+func (s *Store) UpsertLinkshellLeaderBoard(board LinkshellLeaderBoard) error {
+	const q = `
+	INSERT INTO linkshell_leader_boards (guild_id, channel_id, message_id)
+	VALUES (?, ?, ?)
+	ON CONFLICT(guild_id, channel_id) DO UPDATE SET
+		message_id = excluded.message_id
+	`
+
+	_, err := s.DB.Exec(q, board.GuildID, board.ChannelID, board.MessageID)
 	return err
 }

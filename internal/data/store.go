@@ -107,6 +107,13 @@ CREATE TABLE IF NOT EXISTS linkshells_archive (
 	archived_at				TEXT NOT NULL,
 	UNIQUE (guild_id, linkshell_name)
 );
+
+CREATE TABLE IF NOT EXISTS linkshell_leader_boards (
+    guild_id   TEXT NOT NULL,
+    channel_id TEXT NOT NULL,
+    message_id TEXT NOT NULL,
+    PRIMARY KEY (guild_id, channel_id)
+);
 `
 
 func NewStore(path string) (*Store, error) {

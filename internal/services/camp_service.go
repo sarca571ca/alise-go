@@ -6,6 +6,7 @@ import (
 	"alise-go/internal/formatting"
 	"alise-go/internal/models"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -23,6 +24,49 @@ func NewCampService(store *data.Store, cfg config.Config, dg *discordgo.Session)
 		store: store,
 		cfg:   cfg,
 		dg:    dg,
+	}
+}
+
+func (s *CampService) StartPolling(stop <-chan struct{}) {
+	go func() {
+		for {
+			now := time.Now()
+			next := s.nextMidnight(now)
+			select {
+			case <-time.After(time.Until(next)):
+				s.cleanAttendanceArchive()
+			case <-stop:
+				return
+			}
+		}
+	}()
+}
+
+func (s *CampService) cleanAttendanceArchive() {
+	now := time.Now()
+
+	channels, err := s.dg.GuildChannels(s.cfg.GuildID)
+	if err != nil {
+		log.Println("GuildChannels error:", err)
+		return
+	}
+
+	for _, ch := range channels {
+		if !s.isAttendanceArchiveCategory(*ch) {
+			continue
+		}
+
+		chCreationTime, err := discordgo.SnowflakeTimestamp(ch.ID)
+		if err != nil {
+			log.Printf("SnowflakeTimestamp error: channelID=%s err=%v", ch.ID, err)
+			continue
+		}
+
+		if chCreationTime.Add(72 * time.Hour).Before(now) {
+			if _, err := s.dg.ChannelDelete(ch.ID); err != nil {
+				log.Printf("ChannelDelete error: channelID=%s err=%v", ch.ID, err)
+			}
+		}
 	}
 }
 
@@ -103,6 +147,10 @@ func (s *CampService) isHNMCategory(ch discordgo.Channel) bool {
 	return ch.ParentID == s.cfg.Categories.HNMCategoryID
 }
 
+func (s *CampService) isAttendanceArchiveCategory(ch discordgo.Channel) bool {
+	return ch.ParentID == s.cfg.Categories.AttendanceArchiveID
+}
+
 func (s *CampService) incrementLinkshellClaim(
 	rec data.LinkshellRecord,
 	hnmID string,
@@ -158,4 +206,10 @@ func (s *CampService) EnrageWindow(channelID string, window int, delay time.Dura
 	if _, err := s.store.UpsertHNMCampChannel(camp); err != nil {
 		return
 	}
+}
+
+func (s *CampService) nextMidnight(t time.Time) time.Time {
+	y, m, d := t.Date()
+	loc := t.Location()
+	return time.Date(y, m, d+1, 0, 0, 0, 0, loc)
 }

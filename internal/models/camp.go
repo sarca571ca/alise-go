@@ -77,6 +77,3 @@ func GetRSVPInput(hnm HNM, firstWindow time.Time) string {
 	}
 	return sb.String()
 }
-
-// name (currentwindow/windows)|||start|||incrementfromstart|||name
-// Adamantoise (1/7)|||1777772698|||1777701600|||Adamantoise

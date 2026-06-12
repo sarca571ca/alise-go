@@ -1,7 +1,6 @@
 package bot
 
 import (
-	"alise-go/internal/data"
 	"alise-go/internal/models"
 	"fmt"
 	"strings"
@@ -34,35 +33,35 @@ func buildLinkshellLeaderBoard(linkshells []models.Linkshell) *discordgo.Message
 
 }
 
-func (b *Bot) updateLinkshellLeaderBoard(guildID string, linkshells []models.Linkshell) error {
-	channelID := b.cfg.Channels.ClaimsLeaderBoard
-	if channelID == "" {
-		return nil
-	}
-
-	embed := buildLinkshellLeaderBoard(linkshells)
-
-	board, found, err := b.store.GetLinkshellLeaderBoard(guildID, channelID)
-	if err != nil {
-		return err
-	}
-
-	if !found {
-		msg, err := b.dg.ChannelMessageSendEmbed(channelID, embed)
-		if err != nil {
-			return err
-		}
-		return b.store.UpsertLinkshellLeaderBoard(data.LinkshellLeaderBoard{
-			GuildID:   guildID,
-			ChannelID: channelID,
-			MessageID: msg.ID,
-		})
-	}
-
-	_, err = b.dg.ChannelMessageEditEmbed(channelID, board.MessageID, embed)
-	return err
-
-}
+// func (b *Bot) updateLinkshellLeaderBoard(guildID string, linkshells []models.Linkshell) error {
+// 	channelID := b.cfg.Channels.ClaimsLeaderBoard
+// 	if channelID == "" {
+// 		return nil
+// 	}
+//
+// 	embed := buildLinkshellLeaderBoard(linkshells)
+//
+// 	board, found, err := b.store.GetLinkshellLeaderBoard(guildID, channelID)
+// 	if err != nil {
+// 		return err
+// 	}
+//
+// 	if !found {
+// 		msg, err := b.dg.ChannelMessageSendEmbed(channelID, embed)
+// 		if err != nil {
+// 			return err
+// 		}
+// 		return b.store.UpsertLinkshellLeaderBoard(data.LinkshellLeaderBoard{
+// 			GuildID:   guildID,
+// 			ChannelID: channelID,
+// 			MessageID: msg.ID,
+// 		})
+// 	}
+//
+// 	_, err = b.dg.ChannelMessageEditEmbed(channelID, board.MessageID, embed)
+// 	return err
+//
+// }
 
 func formatLinkshellListPlain(linkshells []models.Linkshell) string {
 	if len(linkshells) == 0 {

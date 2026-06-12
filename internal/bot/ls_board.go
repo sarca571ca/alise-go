@@ -33,6 +33,7 @@ func buildLinkshellLeaderBoard(linkshells []models.Linkshell) *discordgo.Message
 
 }
 
+// NOTE: Uncomment bellow lines to enable leaderboards
 // func (b *Bot) updateLinkshellLeaderBoard(guildID string, linkshells []models.Linkshell) error {
 // 	channelID := b.cfg.Channels.ClaimsLeaderBoard
 // 	if channelID == "" {

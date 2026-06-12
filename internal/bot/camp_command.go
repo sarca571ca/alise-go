@@ -52,17 +52,18 @@ func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
 			_, _ = b.dg.ChannelMessageSend(i.ChannelID, "Moving channel to awaiting-processing in 5 minutes.")
 			go b.hnm.MoveCampAfterDelay(camp.ChannelID, 5*time.Minute)
 
-			recs, err := b.store.ListLinkshellRecords(cfg.GuildID)
-			if err != nil {
-				respondEphemeral(s, i, "Failed to load linkshell recs")
-			}
-
-			linkshells := b.store.NewLinkshellListFromRecords(recs)
-
-			if err := b.updateLinkshellLeaderBoard(cfg.GuildID, linkshells); err != nil {
-				respondEphemeral(s, i, "Failed to update linkshell leader boards")
-				return
-			}
+			// NOTE: Uncomment lines to have a dedicated channel for LeaderBoards
+			// recs, err := b.store.ListLinkshellRecords(cfg.GuildID)
+			// if err != nil {
+			// 	respondEphemeral(s, i, "Failed to load linkshell recs")
+			// }
+			//
+			// linkshells := b.store.NewLinkshellListFromRecords(recs)
+			//
+			// if err := b.updateLinkshellLeaderBoard(cfg.GuildID, linkshells); err != nil {
+			// 	respondEphemeral(s, i, "Failed to update linkshell leader boards")
+			// 	return
+			// }
 		},
 		Open: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			camp, ok, err := b.store.GetHNMCampChannelByChannelID(i.GuildID, i.ChannelID)

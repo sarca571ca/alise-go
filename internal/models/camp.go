@@ -4,6 +4,8 @@ import (
 	"alise-go/embedded"
 	"bytes"
 	"fmt"
+	"log"
+	"os"
 	"strings"
 	"time"
 
@@ -28,6 +30,41 @@ func GetCampInfo(hnm HNM, timer HNMTimer, firstWindow time.Time) *discordgo.Mess
 		Value:  hnm.Note,
 		Inline: false,
 	})
+	if hnm.ID == "kv" {
+		weatherBlob := os.Getenv("BLOB")
+
+		wb, err := NewWeatherBlob(weatherBlob)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		vt, err := FetchCurrentVanaTime()
+		var day DayWeather
+
+		if err == nil {
+			day, err = wb.WeatherForVanaDay(AbsoluteVanaDay(vt.Year, vt.Month, vt.Day))
+		} else {
+			day, err = wb.WeatherForNowFallback(time.Now())
+		}
+
+		if day == (DayWeather{}) {
+			log.Println("Failed to load VanaDay")
+		}
+		if err != nil {
+			log.Println(err)
+		}
+		weatherForecast, err := wb.BuildWeatherForecast(10, time.Now())
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		formatedWeatherForecast := FormatWeatherForcastPlain(weatherForecast)
+		fields = append(fields, &discordgo.MessageEmbedField{
+			Name:   "Weather",
+			Value:  formatedWeatherForecast,
+			Inline: false,
+		})
+	}
 
 	embed := &discordgo.MessageEmbed{
 		Title:  hnm.Name,

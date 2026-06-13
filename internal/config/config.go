@@ -24,10 +24,11 @@ type Categories struct {
 	VIPID                string
 }
 type Config struct {
-	Token      string
-	GuildID    string
-	Channels   Channels
-	Categories Categories
+	Token         string
+	GuildID       string
+	Channels      Channels
+	Categories    Categories
+	KVWeatherBlob string
 }
 
 func Load() (Config, error) {
@@ -53,11 +54,13 @@ func Load() (Config, error) {
 		AttendanceArchiveID:  os.Getenv("ATTENDANCEARCHIVEID"),
 		VIPID:                os.Getenv("VIPCATID"),
 	}
+	kVWeatherBlob := os.Getenv("BLOB")
 	return Config{
-			Token:      token,
-			GuildID:    os.Getenv("GUILDID"),
-			Channels:   channels,
-			Categories: categories,
+			Token:         token,
+			GuildID:       os.Getenv("GUILDID"),
+			Channels:      channels,
+			Categories:    categories,
+			KVWeatherBlob: kVWeatherBlob,
 		},
 		nil
 }

@@ -222,10 +222,13 @@ func gwNote() string {
 
 func kvNote() string {
 	return fmt.Sprintf(
-		"- x         - used when you are at kv with the window open prior to pop\n" +
-			"- x-pop     - used when you are present when KV pops and we do NOT claim\n" +
-			"- x-claim   - used when you are present when KV pops and we DO claim\n" +
-			"- x-kill    - used when you are present for the kill of KV\n\n" +
-			"x-pop and x-claim are mutually exclusive",
+		"- [x] at kv with the window open prior to pop\n" +
+			"- [x-pop] present when KV pops and we do NOT claim\n" +
+			"- [x-claim] present when KV pops and we DO claim\n" +
+			"- [x-kill] present for the kill of KV\n" +
+			"*x-pop and x-claim are mutually exclusive*\n\n" +
+			"**Double Earth (SAND_STORM) 100%% Spawn**\n" +
+			"**Single Earth (DUST_STORM) 10%%~ Spawn**\n" +
+			"***If Earth Weather is up when the window opens KV can spawn***",
 	)
 }

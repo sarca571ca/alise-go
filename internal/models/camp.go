@@ -14,6 +14,7 @@ import (
 
 func GetCampInfo(hnm HNM, timer HNMTimer, firstWindow time.Time) *discordgo.MessageSend {
 	var fields []*discordgo.MessageEmbedField
+	var footer *discordgo.MessageEmbedFooter
 
 	var modNote string
 
@@ -75,6 +76,9 @@ func GetCampInfo(hnm HNM, timer HNMTimer, firstWindow time.Time) *discordgo.Mess
 		}
 
 		formatedWeatherForecast := FormatWeatherForcastPlain(weatherForecast)
+		// footer = &discordgo.MessageEmbedFooter{
+		// 	Text: formatedWeatherForecast,
+		// }
 		fields = append(fields, &discordgo.MessageEmbedField{
 			Name:   "Weather",
 			Value:  formatedWeatherForecast,
@@ -85,6 +89,7 @@ func GetCampInfo(hnm HNM, timer HNMTimer, firstWindow time.Time) *discordgo.Mess
 	embed := &discordgo.MessageEmbed{
 		Title:  hnm.Name,
 		Fields: fields,
+		Footer: footer,
 	}
 
 	msg := &discordgo.MessageSend{

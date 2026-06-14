@@ -70,10 +70,11 @@ func (w Weather) String() string {
 }
 
 type DayWeather struct {
-	VanaDay int64
-	Normal  Weather
-	Common  Weather
-	Rare    Weather
+	VanaDay  int64
+	Normal   Weather
+	Common   Weather
+	Rare     Weather
+	StartsAt time.Time
 }
 
 type WeatherForecast struct {
@@ -128,10 +129,11 @@ func (w *WeatherBlob) WeatherForVanaDay(vanaDay int64) (DayWeather, error) {
 	n, c, r := DecodePacked(w.packed[idx])
 
 	return DayWeather{
-		VanaDay: vanaDay,
-		Normal:  n,
-		Common:  c,
-		Rare:    r,
+		VanaDay:  vanaDay,
+		Normal:   n,
+		Common:   c,
+		Rare:     r,
+		StartsAt: VanaDayStartTime(vanaDay),
 	}, nil
 }
 
@@ -170,18 +172,24 @@ func FormatWeatherForcastPlain(forecast []WeatherForecast) string {
 	var sb strings.Builder
 	sb.WriteString(
 		fmt.Sprintf(
-			"Day | Normal | Common | Rare\n",
+			"| VanaDay | Normal(50%%) | Common(35%%) | Rare(15%%) | Opens |\n",
+		),
+	)
+	sb.WriteString(
+		fmt.Sprintf(
+			"----------------------------------\n",
 		),
 	)
 	for f := range len(forecast) {
 		report := forecast[f]
 		sb.WriteString(
 			fmt.Sprintf(
-				"%v | %v | %v | %v\n",
+				"|  %v  | %v | %v | %v | <t:%d:R> |\n",
 				report.Day,
 				report.Weather.Normal,
 				report.Weather.Common,
 				report.Weather.Rare,
+				report.Weather.StartsAt.Unix(),
 			),
 		)
 	}

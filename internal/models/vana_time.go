@@ -83,6 +83,14 @@ func CurrentVanaDayFromUnix(unix int64) int64 {
 	return currentVanaDayFromUnix(unix)
 }
 
+func VanaDayStartUnix(vanaDay int64) int64 {
+	return VanaBaseEpoch + (vanaDay * VanaDaySeconds)
+}
+
+func VanaDayStartTime(vanaDay int64) time.Time {
+	return time.Unix(VanaDayStartUnix(vanaDay), 0).UTC()
+}
+
 func NewVanaTime() VaneTime {
 	return VaneTime{
 		Epoch: 1009810800,

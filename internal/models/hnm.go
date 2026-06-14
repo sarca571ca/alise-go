@@ -227,8 +227,6 @@ func kvNote() string {
 			"- [x-claim] present when KV pops and we DO claim\n" +
 			"- [x-kill] present for the kill of KV\n" +
 			"*x-pop and x-claim are mutually exclusive*\n\n" +
-			"**Double Earth (SAND_STORM) 100%% Spawn**\n" +
-			"**Single Earth (DUST_STORM) 10%%~ Spawn**\n" +
-			"***If Earth Weather is up when the window opens KV can spawn***",
+			"***If Earth Weather is up when the window opens KV will spawn***",
 	)
 }

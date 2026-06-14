@@ -14,11 +14,27 @@ import (
 
 func GetCampInfo(hnm HNM, timer HNMTimer, firstWindow time.Time) *discordgo.MessageSend {
 	var fields []*discordgo.MessageEmbedField
+
+	var modNote string
+
+	if timer.Mod == "a" {
+		modNote = fmt.Sprintf("\n***The respawn time approximate.***")
+	}
+
+	if timer.Mod == "d" {
+		modNote = fmt.Sprintf("\n***This camp is worth Double DKP.***")
+	}
+
+	if timer.Mod == "t" {
+		modNote = fmt.Sprintf("\n***This camp is worth Triple DKP.***")
+	}
+
 	hnmInfo := fmt.Sprintf(
 		// TODO: need to display any double or triple dkp stuff here
-		"First Window: <t:%d:T> <t:%d:R>",
+		"First Window: <t:%d:T> <t:%d:R>%v",
 		firstWindow.Unix(),
 		firstWindow.Unix(),
+		modNote,
 	)
 	fields = append(fields, &discordgo.MessageEmbedField{
 		Name:   "Info",

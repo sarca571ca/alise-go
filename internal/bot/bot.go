@@ -85,6 +85,7 @@ func (b *Bot) Start(ctx context.Context) error {
 
 	stop := make(chan struct{})
 	b.hnm.StartPolling(stop)
+	b.camp.StartPolling(stop)
 
 	<-waitForSignal(ctx)
 	close(stop)

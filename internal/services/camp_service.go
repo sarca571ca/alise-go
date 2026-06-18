@@ -100,6 +100,10 @@ func (s *CampService) Pop(guildID, lsName, quality string, ch *discordgo.Channel
 		return data.HNMCampChannel{}, fmt.Errorf("kings require the quality to be entered nq/hq")
 	}
 
+	if !(hnm.HQName == "") && camp.DaysSinceHQ < 4 && strings.ToLower(quality) == "hq" {
+		return data.HNMCampChannel{}, fmt.Errorf("kings cannot hq before day 4")
+	}
+
 	rec, ok, err := s.store.GetLinkshellRecord(guildID, lsName)
 	if err != nil {
 		return data.HNMCampChannel{}, fmt.Errorf("failed to load linkshell")

@@ -196,7 +196,7 @@ func (s *HNMService) tickCamps() {
 			continue
 		}
 
-		if reused {
+		if reused && !camp.IsSpawned {
 			if _, err = s.updateChannelID(guildID, channel.ID, timer); err != nil {
 				log.Println("Record Update Error:", err)
 			}

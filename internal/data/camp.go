@@ -2,6 +2,7 @@ package data
 
 import (
 	"database/sql"
+	"log"
 	"time"
 )
 
@@ -17,6 +18,7 @@ type HNMCampChannel struct {
 	IsClosed            bool
 	IsEnraged           bool
 	IsSpawned           bool
+	IsHQ                bool
 	LastWindowIdx       int
 	LastWarnedWindowIdx int
 	LastCutoffWindowIdx int
@@ -51,6 +53,11 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 		isSpawned = 1
 	}
 
+	isHQ := 0
+	if ch.IsHQ {
+		isHQ = 1
+	}
+
 	moveScheduled := 0
 	if ch.MoveScheduled {
 		moveScheduled = 1
@@ -59,10 +66,10 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 	const q = `
 	INSERT INTO hnm_camp_channels (
 		id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-		seq, mod, is_closed, is_enraged, is_spawned, last_window_idx, 
+		seq, mod, is_closed, is_enraged, is_spawned, is_hq, last_window_idx, 
 		last_warned_window_idx, last_cutoff_window_idx, move_scheduled,
 		created_at, updated_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT (guild_id, hnm_id, last_kill, days_since_hq) DO UPDATE SET
 		guild_id       			= EXCLUDED.guild_id,
 		channel_id     			= EXCLUDED.channel_id,
@@ -74,6 +81,7 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 		is_closed      			= EXCLUDED.is_closed,
 		is_enraged     			= EXCLUDED.is_enraged,
 		is_spawned     			= EXCLUDED.is_spawned,
+		is_hq					= EXCLUDED.is_hq,
 		last_window_idx 		= EXCLUDED.last_window_idx,
 		last_warned_window_idx	= EXCLUDED.last_warned_window_idx,
 		last_cutoff_window_idx 	= EXCLUDED.last_cutoff_window_idx,
@@ -84,7 +92,7 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 	_, err := s.DB.Exec(
 		q,
 		ch.ID, ch.GuildID, ch.ChannelID, ch.HNMID, toStrTime(ch.LastKill),
-		ch.DaysSinceHQ, ch.Seq, ch.Mod, isClosed, isEnraged, isSpawned,
+		ch.DaysSinceHQ, ch.Seq, ch.Mod, isClosed, isEnraged, isSpawned, isHQ,
 		ch.LastWindowIdx, ch.LastWarnedWindowIdx, ch.LastCutoffWindowIdx,
 		moveScheduled, toStrTime(ch.CreatedAt), toStrTime(ch.UpdatedAt),
 	)
@@ -95,7 +103,7 @@ func (s *Store) UpsertHNMCampChannel(ch HNMCampChannel) (HNMCampChannel, error) 
 func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCampChannel, bool, error) {
 	const q = `
 	SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-		   seq, mod, is_closed, is_enraged, is_spawned, last_window_idx, 
+		   seq, mod, is_closed, is_enraged, is_spawned, is_hq, last_window_idx, 
 		   last_warned_window_idx, last_cutoff_window_idx, move_scheduled,
 		   created_at, updated_at
 	FROM hnm_camp_channels
@@ -108,6 +116,7 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 		isClosedInt        int
 		isEnragedInt       int
 		isSpawnedInt       int
+		isHQInt            int
 		createdAtStr       string
 		updatedAtStr       string
 		isMoveScheduledInt int
@@ -115,7 +124,7 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 
 	err := s.DB.QueryRow(q, guildID, channelID).Scan(
 		&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID, &lastKillStr, &ch.DaysSinceHQ,
-		&ch.Seq, &ch.Mod, &isClosedInt, &isEnragedInt, &isSpawnedInt, &ch.LastWindowIdx,
+		&ch.Seq, &ch.Mod, &isClosedInt, &isEnragedInt, &isSpawnedInt, &isHQInt, &ch.LastWindowIdx,
 		&ch.LastWarnedWindowIdx, &ch.LastCutoffWindowIdx, &isMoveScheduledInt,
 		&createdAtStr, &updatedAtStr,
 	)
@@ -124,6 +133,7 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 		return HNMCampChannel{}, false, nil
 	}
 	if err != nil {
+		log.Println(err)
 		return HNMCampChannel{}, false, err
 	}
 
@@ -140,6 +150,7 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 	ch.IsClosed = isClosedInt != 0
 	ch.IsEnraged = isEnragedInt != 0
 	ch.IsSpawned = isSpawnedInt != 0
+	ch.IsHQ = isHQInt != 0
 	ch.MoveScheduled = isMoveScheduledInt != 0
 
 	return ch, true, nil
@@ -148,7 +159,7 @@ func (s *Store) GetHNMCampChannelByChannelID(guildID, channelID string) (HNMCamp
 func (s *Store) ListHNMCampChannels(guildID string) ([]HNMCampChannel, error) {
 	const q = `
 	SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-		   seq, mod, is_closed, is_enraged, is_spawned, last_window_idx, 
+		   seq, mod, is_closed, is_enraged, is_spawned, is_hq, last_window_idx, 
 		   last_warned_window_idx, last_cutoff_window_idx, move_scheduled,
 		   created_at, updated_at
 	FROM hnm_camp_channels
@@ -169,13 +180,14 @@ func (s *Store) ListHNMCampChannels(guildID string) ([]HNMCampChannel, error) {
 			isClosedInt        int
 			isEnragedInt       int
 			isSpawnedInt       int
+			isHQInt            int
 			createdAtStr       string
 			updatedAtStr       string
 			isMoveScheduledInt int
 		)
 		if err := rows.Scan(
 			&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID, &lastKillStr, &ch.DaysSinceHQ,
-			&ch.Seq, &ch.Mod, &isClosedInt, &isEnragedInt, &isSpawnedInt, &ch.LastWindowIdx,
+			&ch.Seq, &ch.Mod, &isClosedInt, &isEnragedInt, &isSpawnedInt, &isHQInt, &ch.LastWindowIdx,
 			&ch.LastWarnedWindowIdx, &ch.LastCutoffWindowIdx, &isMoveScheduledInt,
 			&createdAtStr, &updatedAtStr,
 		); err != nil {
@@ -194,6 +206,7 @@ func (s *Store) ListHNMCampChannels(guildID string) ([]HNMCampChannel, error) {
 		ch.IsClosed = isClosedInt != 0
 		ch.IsEnraged = isEnragedInt != 0
 		ch.IsSpawned = isSpawnedInt != 0
+		ch.IsHQ = isHQInt != 0
 		ch.MoveScheduled = isMoveScheduledInt != 0
 		out = append(out, ch)
 	}
@@ -213,7 +226,7 @@ func (s *Store) ListHNMCampChannelsForDay(guildID, hnmID string, timer time.Time
 
 	const q = `
 		SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-			   seq, mod, is_closed, is_enraged, is_spawned, last_window_idx, 
+			   seq, mod, is_closed, is_enraged, is_spawned,is_hq, last_window_idx, 
 			   last_warned_window_idx, last_cutoff_window_idx, move_scheduled,
 			   created_at, updated_at
 		FROM hnm_camp_channels
@@ -237,13 +250,14 @@ func (s *Store) ListHNMCampChannelsForDay(guildID, hnmID string, timer time.Time
 			isClosedInt        int
 			isEnragedInt       int
 			isSpawnedInt       int
+			isHQInt            int
 			createdAtStr       string
 			updatedAtStr       string
 			isMoveScheduledInt int
 		)
 		if err := rows.Scan(
 			&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID, &lastKillStr, &ch.DaysSinceHQ,
-			&ch.Seq, &ch.Mod, &isClosedInt, &isEnragedInt, &isSpawnedInt, &ch.LastWindowIdx,
+			&ch.Seq, &ch.Mod, &isClosedInt, &isEnragedInt, &isSpawnedInt, &isHQInt, &ch.LastWindowIdx,
 			&ch.LastWarnedWindowIdx, &ch.LastCutoffWindowIdx, &isMoveScheduledInt,
 			&createdAtStr, &updatedAtStr,
 		); err != nil {
@@ -262,6 +276,7 @@ func (s *Store) ListHNMCampChannelsForDay(guildID, hnmID string, timer time.Time
 		ch.IsClosed = isClosedInt != 0
 		ch.IsEnraged = isEnragedInt != 0
 		ch.IsSpawned = isSpawnedInt != 0
+		ch.IsHQ = isHQInt != 0
 		ch.MoveScheduled = isMoveScheduledInt != 0
 
 		out = append(out, ch)
@@ -276,7 +291,7 @@ func (s *Store) GetHNMCampChannelByCamp(
 ) (HNMCampChannel, bool, error) {
 	const q = `
 	SELECT id, guild_id, channel_id, hnm_id, last_kill, days_since_hq,
-		   seq, mod, is_closed, is_enraged, is_spawned, last_window_idx, 
+		   seq, mod, is_closed, is_enraged, is_spawned, is_hq, last_window_idx, 
 		   last_warned_window_idx, last_cutoff_window_idx, move_scheduled,
 		   created_at, updated_at
 	FROM hnm_camp_channels
@@ -289,6 +304,7 @@ func (s *Store) GetHNMCampChannelByCamp(
 		isClosedInt        int
 		isEnragedInt       int
 		isSpawnedInt       int
+		isHQInt            int
 		createdAtStr       string
 		updatedAtStr       string
 		isMoveScheduledInt int
@@ -302,7 +318,7 @@ func (s *Store) GetHNMCampChannelByCamp(
 		daysSinceHQ,
 	).Scan(
 		&ch.ID, &ch.GuildID, &ch.ChannelID, &ch.HNMID, &lastKillStr, &ch.DaysSinceHQ,
-		&ch.Seq, &ch.Mod, &isClosedInt, &isEnragedInt, &isSpawnedInt, &ch.LastWindowIdx,
+		&ch.Seq, &ch.Mod, &isClosedInt, &isEnragedInt, &isSpawnedInt, &isHQInt, &ch.LastWindowIdx,
 		&ch.LastWarnedWindowIdx, &ch.LastCutoffWindowIdx, &isMoveScheduledInt,
 		&createdAtStr, &updatedAtStr,
 	)
@@ -326,6 +342,7 @@ func (s *Store) GetHNMCampChannelByCamp(
 	ch.IsClosed = isClosedInt != 0
 	ch.IsEnraged = isEnragedInt != 0
 	ch.IsSpawned = isSpawnedInt != 0
+	ch.IsHQ = isHQInt != 0
 	ch.MoveScheduled = isMoveScheduledInt != 0
 
 	return ch, true, nil

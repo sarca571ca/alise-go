@@ -18,6 +18,11 @@ type OpenHandler func(
 	i *discordgo.InteractionCreate,
 )
 
+type DeadHandler func(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+)
+
 type CloseHandler func(
 	s *discordgo.Session,
 	i *discordgo.InteractionCreate,
@@ -44,6 +49,7 @@ type CTAHandler func(
 )
 type CampCommand struct {
 	Pop      PopHandler
+	Dead     DeadHandler
 	Open     OpenHandler
 	Close    CloseHandler
 	Enrage   EnrageHandler
@@ -79,6 +85,11 @@ func (CampCommand) SlashDef() *discordgo.ApplicationCommand {
 						Autocomplete: true,
 					},
 				},
+			},
+			{
+				Type:        discordgo.ApplicationCommandOptionSubCommand,
+				Name:        "dead",
+				Description: "Marks ToD and auto-updates hnm timers",
 			},
 			{
 				Type:        discordgo.ApplicationCommandOptionSubCommand,
@@ -133,6 +144,8 @@ func (cmd CampCommand) HandleInteraction(s *discordgo.Session, i *discordgo.Inte
 	switch sub.Name {
 	case "pop":
 		cmd.handlePop(s, i, sub)
+	case "dead":
+		cmd.handleDead(s, i)
 	case "open":
 		cmd.handleOpen(s, i)
 	case "close":
@@ -166,6 +179,13 @@ func (cmd CampCommand) handlePop(
 	sub *discordgo.ApplicationCommandInteractionDataOption,
 ) {
 	cmd.Pop(s, i, getNameOption(sub), getQualityOption(sub))
+}
+
+func (cmd CampCommand) handleDead(
+	s *discordgo.Session,
+	i *discordgo.InteractionCreate,
+) {
+	cmd.Dead(s, i)
 }
 
 func (cmd CampCommand) handleOpen(

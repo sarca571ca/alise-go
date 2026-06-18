@@ -3,6 +3,7 @@ package bot
 import (
 	"alise-go/internal/commands"
 	"alise-go/internal/config"
+	"alise-go/internal/data"
 	"alise-go/internal/formatting"
 	"alise-go/internal/models"
 	"fmt"
@@ -64,6 +65,81 @@ func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
 			// 	respondEphemeral(s, i, "Failed to update linkshell leader boards")
 			// 	return
 			// }
+		},
+		Dead: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			now := time.Now()
+			camp, ok, err := b.store.GetHNMCampChannelByChannelID(i.GuildID, i.ChannelID)
+			if err != nil {
+				respondEphemeral(s, i, "failed to load camp")
+				return
+			}
+			if !ok {
+				respondEphemeral(s, i, "no camp record found for this channel")
+				return
+			}
+
+			if !camp.IsSpawned {
+				respondEphemeral(s, i, "/camp pop must be used first, manual ToD entry now required")
+				return
+			}
+
+			hnm, ok := models.GetHNM(camp.HNMID)
+			if !ok {
+				return
+			}
+
+			timer := models.HNMTimer{
+				HNM:      hnm,
+				Mod:      "n",
+				LastKill: now,
+			}
+
+			if hnm.HQName != "" {
+				if camp.IsHQ {
+					timer.DaysSinceHQ = 1
+				} else {
+					timer.DaysSinceHQ = camp.DaysSinceHQ + 1
+				}
+			}
+
+			guildID := i.GuildID
+			channelID := cfg.Channels.HNMTimes
+
+			rec := data.NewRecordFromHNMTimer(guildID, channelID, timer)
+
+			if _, err := b.store.UpsertHNMTimerRecord(rec); err != nil {
+				respondEphemeral(s, i, "Failed to save timer")
+				return
+			}
+
+			recs, err := b.store.ListHNMTimerRecords(guildID, channelID)
+			if err != nil {
+				respondEphemeral(s, i, "Failed to load timers")
+			}
+
+			var timers []models.HNMTimer
+			for _, r := range recs {
+				hnm, ok := models.GetHNM(r.HNMID)
+				if !ok {
+					continue
+				}
+				timers = append(timers, data.NewTimerFromRecord(r, hnm))
+			}
+
+			if err := b.updateHNMTimerBoard(guildID, timers); err != nil {
+				respondEphemeral(s, i, "Failed to update timer board")
+				return
+			}
+
+			content := formatHNMTimerPlain(timer)
+
+			_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionResponseChannelMessageWithSource,
+				Data: &discordgo.InteractionResponseData{
+					Content: content,
+				},
+			},
+			)
 		},
 		Open: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			camp, ok, err := b.store.GetHNMCampChannelByChannelID(i.GuildID, i.ChannelID)

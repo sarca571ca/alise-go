@@ -115,6 +115,7 @@ func (s *CampService) Pop(guildID, lsName, quality string, ch *discordgo.Channel
 	claimedHNM := hnm.ID
 	if quality == "hq" && hnm.HQName != "" {
 		claimedHNM = strings.ToLower(hnm.HQName)
+		camp.IsHQ = true
 	}
 	rec, err = s.incrementLinkshellClaim(rec, claimedHNM)
 	if err != nil {

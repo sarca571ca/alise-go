@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -56,6 +57,7 @@ func (b *Bot) logCommandUsage(s *discordgo.Session, i *discordgo.InteractionCrea
 	})
 
 	log.Printf(logEntry)
+	b.logToDiscord(logEntry)
 }
 
 func (b *Bot) logErrorMessage(group string, err error) {
@@ -70,6 +72,7 @@ func (b *Bot) logErrorMessage(group string, err error) {
 	})
 
 	log.Printf(logEntry)
+	b.logToDiscord(logEntry)
 }
 
 func (b *Bot) logBasicMessage(group, msg string) {
@@ -84,4 +87,23 @@ func (b *Bot) logBasicMessage(group, msg string) {
 	})
 
 	log.Printf(logEntry)
+	b.logToDiscord(logEntry)
+}
+
+func (b *Bot) logToDiscord(msg string) {
+	now := time.Now()
+	// _, month, _ := now.Date()
+	logTimeStamp := fmt.Sprintf(
+		"[%v-%v-%v %v:%v:%v]",
+		now.Year(),
+		now.Format("01"),
+		now.Day(),
+		now.Hour(),
+		now.Minute(),
+		now.Second(),
+	)
+
+	if _, err := b.dg.ChannelMessageSend(b.cfg.Channels.BotLogs, logTimeStamp+msg); err != nil {
+		log.Println(err)
+	}
 }

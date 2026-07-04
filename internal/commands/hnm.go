@@ -141,6 +141,9 @@ func (cmd HNMCommand) HandleAutoCompleteCommand(
 			{Name: "Simurgh", Value: "simurgh"},
 			{Name: "Shikigami Weapon", Value: "shiki"},
 			{Name: "Bloodsucker", Value: "bloodsucker"},
+			{Name: "Khimaira", Value: "khimaira"},
+			{Name: "Cerberus", Value: "cerberus"},
+			{Name: "Hydra", Value: "hydra"},
 		}
 
 		parseAutoComplete(s, i, partial, choices)

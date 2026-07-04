@@ -175,6 +175,7 @@ func (s *HNMService) tickCamps() {
 		}
 
 		name, seq, err := s.campNameAndSeq(s.store, guildID, timer)
+		log.Println(name, seq, err)
 		if err != nil {
 			continue
 		}

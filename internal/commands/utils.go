@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"log"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -61,11 +62,18 @@ func resolveHNM(s *discordgo.Session, i *discordgo.InteractionCreate) (string, b
 		"bs":               "bloodsucker",
 		"sim":              "simurgh",
 		"simurgh":          "simurgh",
+		"khim":             "khimaira",
+		"khimaira":         "khimaira",
+		"cerb":             "cerberus",
+		"cerberus":         "cerberus",
+		"hydra":            "hydra",
 	}
 
 	hnmOpt := data.GetOption("name")
 	hnmKey := strings.TrimSpace(strings.ToLower(hnmOpt.Value.(string)))
 	hnm, ok := hnmAliases[hnmKey]
+	log.Print(hnmKey)
+	log.Print(hnm, ok)
 
 	if !ok {
 		_ = s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{

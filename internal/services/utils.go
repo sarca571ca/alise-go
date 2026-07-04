@@ -35,6 +35,12 @@ func hnmShortCode(hnm models.HNM) string {
 		return "shi"
 	case "kv":
 		return "kv"
+	case "khimaira":
+		return "khi"
+	case "hydra":
+		return "hyd"
+	case "cerberus":
+		return "cer"
 	default:
 		return hnm.ID
 	}

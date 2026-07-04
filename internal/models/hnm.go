@@ -158,6 +158,36 @@ var HNMs = map[string]HNM{
 		Emoji:                ":scorpion:",
 		Note:                 kvNote(),
 	},
+	"khimaira": {
+		ID:             "khimaira",
+		Name:           "Khimaira",
+		BaseRespawn:    84 * time.Hour,
+		WindowInterval: 60 * time.Minute,
+		WindowCount:    25,
+		HQName:         "",
+		Emoji:          ":imp",
+		Note:           "", // TBD
+	},
+	"cerberus": {
+		ID:             "cerberus",
+		Name:           "Cerberus",
+		BaseRespawn:    84 * time.Hour,
+		WindowInterval: 60 * time.Minute,
+		WindowCount:    25,
+		HQName:         "",
+		Emoji:          ":wolf:",
+		Note:           "", // TBD
+	},
+	"hydra": {
+		ID:             "hydra",
+		Name:           "Hydra",
+		BaseRespawn:    84 * time.Hour,
+		WindowInterval: 60 * time.Minute,
+		WindowCount:    25,
+		HQName:         "",
+		Emoji:          ":dragon::dragon::dragon:",
+		Note:           "", // TBD
+	},
 }
 
 func GetHNM(id string) (HNM, bool) {

@@ -188,6 +188,10 @@ var HNMs = map[string]HNM{
 		Emoji:          ":dragon::dragon::dragon:",
 		Note:           "", // TBD
 	},
+	// NOTE: The below are disable for now until we get propper spawn info
+	// "gulool":    {},
+	// "gurfurlur": {},
+	// "medusa":    {},
 }
 
 func GetHNM(id string) (HNM, bool) {

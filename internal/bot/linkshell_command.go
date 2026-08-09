@@ -12,6 +12,11 @@ import (
 func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 	linkshellCmd := commands.LinkshellCommand{
 		List: func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+			if i.ChannelID != cfg.Channels.BotCommands {
+				respondEphemeral(s, i, "Must be used in the bot-commands channel")
+				return
+			}
+
 			guildID := i.GuildID
 			recs, err := b.store.ListLinkshellRecords(guildID)
 			if err != nil {
@@ -22,6 +27,11 @@ func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 			respondEphemeral(s, i, msg)
 		},
 		Add: func(s *discordgo.Session, i *discordgo.InteractionCreate, ls string) {
+			if i.ChannelID != cfg.Channels.BotCommands {
+				respondEphemeral(s, i, "Must be used in the bot-commands channel")
+				return
+			}
+
 			guildID := i.GuildID
 			_, ok, err := b.store.GetLinkshellRecord(guildID, ls)
 			if err != nil {
@@ -44,6 +54,11 @@ func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 
 		},
 		Remove: func(s *discordgo.Session, i *discordgo.InteractionCreate, ls string) {
+			if i.ChannelID != cfg.Channels.BotCommands {
+				respondEphemeral(s, i, "Must be used in the bot-commands channel")
+				return
+			}
+
 			guildID := i.GuildID
 			_, ok, err := b.store.GetLinkshellRecord(guildID, ls)
 			if err != nil {
@@ -64,6 +79,11 @@ func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 			respondEphemeral(s, i, sb.String())
 		},
 		Restore: func(s *discordgo.Session, i *discordgo.InteractionCreate, ls string) {
+			if i.ChannelID != cfg.Channels.BotCommands {
+				respondEphemeral(s, i, "Must be used in the bot-commands channel")
+				return
+			}
+
 			guildID := i.GuildID
 			_, ok, err := b.store.GetLinkshellRecord(guildID, ls)
 			if err != nil {
@@ -85,7 +105,12 @@ func (b *Bot) buildLinkshellCommand(cfg config.Config) commands.Command {
 		},
 		// NOTE: I'm not going to implement this yet there is to much of a concern of manipulating data.
 		// Update modal that self populates the the fields with current values
-		Update: func(s *discordgo.Session, i *discordgo.InteractionCreate, ls string) {},
+		Update: func(s *discordgo.Session, i *discordgo.InteractionCreate, ls string) {
+			if i.ChannelID != cfg.Channels.BotCommands {
+				respondEphemeral(s, i, "Must be used in the bot-commands channel")
+				return
+			}
+		},
 	}
 	return linkshellCmd
 }

@@ -462,6 +462,7 @@ func (s *HNMService) MoveCampAfterDelay(channelID string, delay time.Duration) {
 	_, _ = s.dg.ChannelEdit(channelID, &discordgo.ChannelEdit{
 		ParentID: targetParent,
 	})
+	_, _ = s.dg.ChannelMessageSend(channelID, formatting.FormatWindowHeading("DKP Review"))
 }
 
 func (s *HNMService) campNameAndSeq(store *data.Store, guildID string, timer models.HNMTimer) (string, int, error) {

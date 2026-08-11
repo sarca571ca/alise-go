@@ -203,7 +203,8 @@ func (s *CampService) EnrageWindow(channelID string, window int, delay time.Dura
 
 	if _, err := s.dg.ChannelMessageSend(
 		channelID,
-		fmt.Sprintf("%v\nMoving channel to awaiting-processing in 5 minutes.", formatting.FormatWindowHeading(fmt.Sprintf("Enrage %v Closed", window))),
+		fmt.Sprintf("%v\nMoving channel to awaiting-processing in 5 minutes.",
+			formatting.FormatWindowHeading(fmt.Sprintf("Enrage %v Closed", window))),
 	); err != nil {
 		return
 	}

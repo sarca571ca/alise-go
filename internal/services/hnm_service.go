@@ -175,7 +175,6 @@ func (s *HNMService) tickCamps() {
 		}
 
 		name, seq, err := s.campNameAndSeq(s.store, guildID, timer)
-		log.Println(name, seq, err)
 		if err != nil {
 			continue
 		}
@@ -456,13 +455,16 @@ func (s *HNMService) MoveCampAfterDelay(channelID string, delay time.Duration) {
 	guildID := s.cfg.GuildID
 	targetParent := s.cfg.Categories.AwaitingProcessingID
 	if guildID == "" || targetParent == "" {
+		log.Println("MoveCampAfterDelay: missing guildID or targetParent, skipping")
 		return
 	}
 
 	_, _ = s.dg.ChannelEdit(channelID, &discordgo.ChannelEdit{
 		ParentID: targetParent,
 	})
+
 	_, _ = s.dg.ChannelMessageSend(channelID, formatting.FormatWindowHeading("DKP Review"))
+
 }
 
 func (s *HNMService) campNameAndSeq(store *data.Store, guildID string, timer models.HNMTimer) (string, int, error) {

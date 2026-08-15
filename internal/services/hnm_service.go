@@ -75,7 +75,7 @@ func (s *HNMService) checkTimers() {
 			continue
 		}
 
-		s.sendCampPing(hnm.Name, next, diff)
+		s.sendCampPing(timer, next, diff)
 
 		r.IsNotified = true
 		if _, err := s.store.UpsertHNMTimerRecord(r); err != nil {
@@ -85,7 +85,7 @@ func (s *HNMService) checkTimers() {
 	}
 }
 
-func (s *HNMService) sendCampPing(hnmName string, spawn time.Time, diff time.Duration) {
+func (s *HNMService) sendCampPing(timer models.HNMTimer, spawn time.Time, diff time.Duration) {
 	channelID := s.cfg.Channels.CampPings
 	if channelID == "" {
 		return
@@ -95,9 +95,9 @@ func (s *HNMService) sendCampPing(hnmName string, spawn time.Time, diff time.Dur
 	mins = max(mins, 1)
 
 	content := fmt.Sprintf(
-		"@everyone %s camp will start in %d minutes (respawn at <t:%d:R>)",
-		hnmName,
-		mins,
+		"@everyone %s <t:%d:T> <t:%d:R>",
+		models.BuildHNMTimerName(timer),
+		spawn.Unix(),
 		spawn.Unix(),
 	)
 
@@ -186,11 +186,13 @@ func (s *HNMService) tickCamps() {
 		}
 
 		parentID := s.cfg.Categories.HNMCategoryID
+		topic := fmt.Sprintf("<t:%d:T> <t:%d:R>", firstWindow.Unix(), firstWindow.Unix())
 
 		channel, err := s.dg.GuildChannelCreateComplex(guildID, discordgo.GuildChannelCreateData{
 			Name:     name,
 			Type:     discordgo.ChannelTypeGuildText,
 			ParentID: parentID,
+			Topic:    topic,
 		})
 		if err != nil {
 			continue

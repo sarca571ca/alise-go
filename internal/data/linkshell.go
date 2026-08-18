@@ -24,6 +24,9 @@ type LinkshellRecord struct {
 	NidhoggClaims         int
 	AspidocheloneClaims   int
 	KingBehemothClaims    int
+	KhimairaClaims        int
+	CerberusClaims        int
+	HydraClaims           int
 	CreatedAt             time.Time
 	UpdatedAt             time.Time
 	ArchivedAt            time.Time
@@ -62,6 +65,9 @@ func (s *Store) NewLinkshellListFromRecords(linkshells []LinkshellRecord) []mode
 			NidhoggClaims:         ls.NidhoggClaims,
 			AspidocheloneClaims:   ls.AspidocheloneClaims,
 			KingBehemothClaims:    ls.KingBehemothClaims,
+			KhimairaClaims:        ls.KhimairaClaims,
+			CerberusClaims:        ls.CerberusClaims,
+			HydraClaims:           ls.HydraClaims,
 		})
 	}
 	return linkshellList
@@ -88,9 +94,10 @@ func (s *Store) UpsertLinkshellRecord(ls LinkshellRecord) (LinkshellRecord, erro
 		behemoth_claims, simurgh_claims, shikigami_weapon_claims,
 		king_arthro_claims, king_vinegarroon_claims, bloodsucker_claims,
 		tiamat_claims, vrtra_claims, jormungand_claims, nidhogg_claims,
-		aspidochelone_claims, king_behemoth_claims, created_at, updated_at,
+		aspidochelone_claims, king_behemoth_claims, khimaira_claims,
+		cerberus_claims, hydra_claims, created_at, updated_at,
 		archived_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(guild_id, linkshell_name) DO UPDATE SET
 		fafnir_claims			= excluded.fafnir_claims,
 		adamantoise_claims		= excluded.adamantoise_claims,
@@ -106,6 +113,9 @@ func (s *Store) UpsertLinkshellRecord(ls LinkshellRecord) (LinkshellRecord, erro
 		nidhogg_claims			= excluded.nidhogg_claims,
 		aspidochelone_claims	= excluded.aspidochelone_claims,
 		king_behemoth_claims	= excluded.king_behemoth_claims,
+		khimaira_claims			= excluded.khimaira_claims,
+		cerberus_claims			= excluded.cerberus_claims,
+		hydra_claims			= excluded.hydra_claims,
 		updated_at      		= excluded.updated_at
 	`
 
@@ -114,6 +124,7 @@ func (s *Store) UpsertLinkshellRecord(ls LinkshellRecord) (LinkshellRecord, erro
 		ls.BehemothClaims, ls.SimurghClaims, ls.ShikigamiWeaponClaims, ls.KingArthroClaims,
 		ls.KingVinegarroonClaims, ls.BloodsuckerClaims, ls.TiamatClaims, ls.VrtraClaims,
 		ls.JormungandClaims, ls.NidhoggClaims, ls.AspidocheloneClaims, ls.KingBehemothClaims,
+		ls.KhimairaClaims, ls.CerberusClaims, ls.HydraClaims,
 		toStrTime(ls.CreatedAt), toStrTime(ls.UpdatedAt), archivedAt,
 	)
 
@@ -127,6 +138,7 @@ func (s *Store) ListLinkshellRecords(guildID string) ([]LinkshellRecord, error) 
 	behemoth_claims, simurgh_claims, shikigami_weapon_claims, king_arthro_claims,
 	king_vinegarroon_claims, bloodsucker_claims, tiamat_claims, vrtra_claims,
 	jormungand_claims, nidhogg_claims, aspidochelone_claims, king_behemoth_claims,
+	khimaira_claims, cerberus_claims, hydra_claims,
 	created_at, updated_at, archived_at
 	FROM linkshells
 	WHERE guild_id = ?
@@ -150,6 +162,7 @@ func (s *Store) ListLinkshellRecords(guildID string) ([]LinkshellRecord, error) 
 			&ls.BehemothClaims, &ls.SimurghClaims, &ls.ShikigamiWeaponClaims, &ls.KingArthroClaims,
 			&ls.KingVinegarroonClaims, &ls.BloodsuckerClaims, &ls.TiamatClaims, &ls.VrtraClaims,
 			&ls.JormungandClaims, &ls.NidhoggClaims, &ls.AspidocheloneClaims, &ls.KingBehemothClaims,
+			&ls.KhimairaClaims, &ls.CerberusClaims, &ls.HydraClaims,
 			&createdAtStr, &updatedAtStr, &archivedAtStr,
 		); err != nil {
 			return nil, err
@@ -179,6 +192,7 @@ func (s *Store) GetLinkshellRecord(guildID, linkshellName string) (LinkshellReco
 	behemoth_claims, simurgh_claims, shikigami_weapon_claims, king_arthro_claims,
 	king_vinegarroon_claims, bloodsucker_claims, tiamat_claims, vrtra_claims,
 	jormungand_claims, nidhogg_claims, aspidochelone_claims, king_behemoth_claims,
+	khimaira_claims, cerberus_claims, hydra_claims,
 	created_at, updated_at, archived_at
 	FROM linkshells
 	WHERE guild_id = ? AND linkshell_name = ?
@@ -196,6 +210,7 @@ func (s *Store) GetLinkshellRecord(guildID, linkshellName string) (LinkshellReco
 		&ls.BehemothClaims, &ls.SimurghClaims, &ls.ShikigamiWeaponClaims, &ls.KingArthroClaims,
 		&ls.KingVinegarroonClaims, &ls.BloodsuckerClaims, &ls.TiamatClaims, &ls.VrtraClaims,
 		&ls.JormungandClaims, &ls.NidhoggClaims, &ls.AspidocheloneClaims, &ls.KingBehemothClaims,
+		&ls.KhimairaClaims, &ls.CerberusClaims, &ls.HydraClaims,
 		&createdAtStr, &updatedAtStr, &archivedAtStr,
 	)
 	if err == sql.ErrNoRows {
@@ -256,9 +271,11 @@ func (s *Store) ArchiveLinkshellRecord(guildID, linkshellName string) (Linkshell
 		behemoth_claims, simurgh_claims, shikigami_weapon_claims,
 		king_arthro_claims, king_vinegarroon_claims, bloodsucker_claims,
 		tiamat_claims, vrtra_claims, jormungand_claims, nidhogg_claims,
-		aspidochelone_claims, king_behemoth_claims, created_at, updated_at,
+		aspidochelone_claims, king_behemoth_claims, 
+		khimaira_claims, cerberus_claims, hydra_claims, 
+		created_at, updated_at,
 		archived_at
-	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+	) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
 	ON CONFLICT(guild_id, linkshell_name) DO UPDATE SET
 		fafnir_claims			= excluded.fafnir_claims,
 		adamantoise_claims		= excluded.adamantoise_claims,
@@ -274,6 +291,9 @@ func (s *Store) ArchiveLinkshellRecord(guildID, linkshellName string) (Linkshell
 		nidhogg_claims			= excluded.nidhogg_claims,
 		aspidochelone_claims	= excluded.aspidochelone_claims,
 		king_behemoth_claims	= excluded.king_behemoth_claims,
+		khimaira_claims			= excluded.khimaira_claims,
+		cerberus_claims			= excluded.cerberus_claims,
+		hydra_claims			= excluded.hydra_claims,
 		updated_at      		= excluded.updated_at
 	`
 
@@ -282,6 +302,7 @@ func (s *Store) ArchiveLinkshellRecord(guildID, linkshellName string) (Linkshell
 		ls.BehemothClaims, ls.SimurghClaims, ls.ShikigamiWeaponClaims, ls.KingArthroClaims,
 		ls.KingVinegarroonClaims, ls.BloodsuckerClaims, ls.TiamatClaims, ls.VrtraClaims,
 		ls.JormungandClaims, ls.NidhoggClaims, ls.AspidocheloneClaims, ls.KingBehemothClaims,
+		ls.KhimairaClaims, ls.CerberusClaims, ls.HydraClaims,
 		toStrTime(ls.CreatedAt), toStrTime(ls.UpdatedAt), toStrTime(ls.ArchivedAt),
 	)
 
@@ -296,6 +317,7 @@ func (s *Store) RestoreLinkshellRecord(guildID, linkshellName string) (Linkshell
 		       king_vinegarroon_claims, bloodsucker_claims, tiamat_claims,
 		       vrtra_claims, jormungand_claims, nidhogg_claims,
 		       aspidochelone_claims, king_behemoth_claims,
+			   khimaira_claims, cerberus_claims, hydra_claims,
 		       created_at, updated_at, archived_at
 		FROM linkshells_archive
 		WHERE guild_id = ? AND linkshell_name = ?
@@ -315,6 +337,7 @@ func (s *Store) RestoreLinkshellRecord(guildID, linkshellName string) (Linkshell
 		&ls.KingVinegarroonClaims, &ls.BloodsuckerClaims, &ls.TiamatClaims,
 		&ls.VrtraClaims, &ls.JormungandClaims, &ls.NidhoggClaims,
 		&ls.AspidocheloneClaims, &ls.KingBehemothClaims,
+		&ls.KhimairaClaims, &ls.CerberusClaims, &ls.HydraClaims,
 		&createdAtStr, &updatedAtStr, &archivedAtStr,
 	)
 	if err == sql.ErrNoRows {

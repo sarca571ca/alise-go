@@ -46,9 +46,9 @@ func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
 			)
 
 			if quality != "" {
-				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("Pop | %s | %s", lsName, quality)))
+				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s | %s", camp.LastWindowIdx, lsName, quality)))
 			} else {
-				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("Pop | %s", lsName)))
+				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s", camp.LastWindowIdx, lsName)))
 			}
 			_, _ = b.dg.ChannelMessageSend(i.ChannelID, "Moving channel to awaiting-processing in 5 minutes.")
 			go b.hnm.MoveCampAfterDelay(camp.ChannelID, 5*time.Minute)

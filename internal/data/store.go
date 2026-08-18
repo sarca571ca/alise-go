@@ -79,6 +79,9 @@ CREATE TABLE IF NOT EXISTS linkshells (
 	nidhogg_claims			INTEGER NOT NULL DEFAULT 0,
 	aspidochelone_claims	INTEGER NOT NULL DEFAULT 0,
 	king_behemoth_claims	INTEGER NOT NULL DEFAULT 0,
+	khimaira_claims			INTEGER NOT NULL DEFAULT 0,
+	cerberus_claims			INTEGER NOT NULL DEFAULT 0,
+	hydra_claims			INTEGER NOT NULL DEFAULT 0,
 	created_at				TEXT NOT NULL,
 	updated_at				TEXT NOT NULL,
 	archived_at				TEXT NOT NULL,
@@ -103,6 +106,9 @@ CREATE TABLE IF NOT EXISTS linkshells_archive (
 	nidhogg_claims			INTEGER NOT NULL DEFAULT 0,
 	aspidochelone_claims	INTEGER NOT NULL DEFAULT 0,
 	king_behemoth_claims	INTEGER NOT NULL DEFAULT 0,
+	khimaira_claims			INTEGER NOT NULL DEFAULT 0,
+	cerberus_claims			INTEGER NOT NULL DEFAULT 0,
+	hydra_claims			INTEGER NOT NULL DEFAULT 0,
 	created_at				TEXT NOT NULL,
 	updated_at				TEXT NOT NULL,
 	archived_at				TEXT NOT NULL,
@@ -127,5 +133,56 @@ func NewStore(path string) (*Store, error) {
 		return nil, err
 	}
 
+	if err := migrateColumns(db); err != nil {
+		return nil, err
+	}
+
 	return &Store{DB: db}, nil
+}
+
+func migrateColumns(db *sql.DB) error {
+	tableColumns := map[string][]string{
+		"linkshells":         {"khimaira_claims", "cerberus_claims", "hydra_claims"},
+		"linkshells_archive": {"khimaira_claims", "cerberus_claims", "hydra_claims"},
+	}
+
+	for table, columns := range tableColumns {
+		existing, err := existingColumns(db, table)
+		if err != nil {
+			return err
+		}
+
+		for _, col := range columns {
+			if existing[col] {
+				continue
+			}
+			stmt := "ALTER TABLE " + table + " ADD COLUMN " + col + " INTEGER NOT NULL DEFAULT 0"
+			if _, err := db.Exec(stmt); err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func existingColumns(db *sql.DB, table string) (map[string]bool, error) {
+	rows, err := db.Query("PRAGMA table_info(" + table + ")")
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	cols := make(map[string]bool)
+	for rows.Next() {
+		var cid int
+		var name, colType string
+		var notNull, pk int
+		var dfltValue sql.NullString
+		if err := rows.Scan(&cid, &name, &colType, &notNull, &dfltValue, &pk); err != nil {
+			return nil, err
+		}
+		cols[name] = true
+	}
+	return cols, rows.Err()
 }

@@ -12,6 +12,7 @@ func (b *Bot) buildCommands(cfg config.Config) []commands.Command {
 		b.withCommandLogging(b.buildHnmCommand(cfg)),
 		b.withCommandLogging(b.buildLinkshellCommand(cfg)),
 		b.withCommandLogging(b.buildCampCommand(cfg)),
+		b.withCommandLogging(b.buildDebugCommand(cfg)),
 	}
 }
 

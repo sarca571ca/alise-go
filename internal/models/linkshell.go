@@ -16,6 +16,9 @@ type Linkshell struct {
 	NidhoggClaims         int
 	AspidocheloneClaims   int
 	KingBehemothClaims    int
+	KhimairaClaims        int
+	CerberusClaims        int
+	HydraClaims           int
 }
 
 // func ParseLinkshellCommandInput(l *LinkshellInput)

@@ -185,16 +185,17 @@ var HNMs = map[string]HNM{
 		Note:                 gwNote(), // TBD
 	},
 	"hydra": {
-		ID:                "hydra",
-		Name:              "Hydra",
-		BaseRespawn:       48 * time.Hour,
-		WindowInterval:    60 * time.Minute,
-		WindowCount:       25,
-		WarnBeforeWindow:  5 * time.Minute,
-		CutoffAfterWindow: 1 * time.Minute,
-		HQName:            "",
-		Emoji:             ":dragon::dragon::dragon:",
-		Note:              gwNote(), // TBD
+		ID:                   "hydra",
+		Name:                 "Hydra",
+		BaseRespawn:          48 * time.Hour,
+		WindowInterval:       60 * time.Minute,
+		WindowCount:          25,
+		WarnBeforeWindow:     5 * time.Minute,
+		CutoffAfterWindow:    1 * time.Minute,
+		UseHourlyWarningFlow: true,
+		HQName:               "",
+		Emoji:                ":dragon::dragon::dragon:",
+		Note:                 gwNote(), // TBD
 	},
 	// NOTE: The below are disable for now until we get propper spawn info
 	// "gulool":    {},

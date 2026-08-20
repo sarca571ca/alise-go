@@ -426,7 +426,7 @@ func (s *HNMService) tickGrandWyrmWindows() {
 				_, _ = s.dg.ChannelMessageSend(
 					camp.ChannelID,
 					formatting.FormatWindowHeading(
-						fmt.Sprintf("Window %d opens in 5 minutes x-in", i),
+						fmt.Sprintf("Window %d opens in 5-Minutes x-in", i),
 					),
 				)
 				camp.LastWarnedWindowIdx = i

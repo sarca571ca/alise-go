@@ -189,6 +189,12 @@ func (s *CampService) incrementLinkshellClaim(
 		rec.ShikigamiWeaponClaims++
 	case "kv":
 		rec.KingVinegarroonClaims++
+	case "cerberus":
+		rec.CerberusClaims++
+	case "hydra":
+		rec.HydraClaims++
+	case "khimaira":
+		rec.KhimairaClaims++
 	default:
 		return rec, fmt.Errorf("unsupported HNM id: %q", hnmID)
 	}

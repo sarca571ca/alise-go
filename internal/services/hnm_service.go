@@ -422,6 +422,13 @@ func (s *HNMService) tickGrandWyrmWindows() {
 			warnAt := windowStart.Add(-hnm.WarnBeforeWindow)
 			cutoffAt := windowStart.Add(hnm.CutoffAfterWindow)
 
+			if hnm.WindowInterval == (6 * time.Hour) {
+				pingAt := windowStart.Add(-time.Hour)
+
+				if !now.Before(pingAt) && camp.LastWarnedWindowIdx < i {
+					s.sendCampPing(timer, windowStart, time.Hour)
+				}
+			}
 			if !now.Before(warnAt) && camp.LastWarnedWindowIdx < i {
 				_, _ = s.dg.ChannelMessageSend(
 					camp.ChannelID,

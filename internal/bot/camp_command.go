@@ -47,6 +47,8 @@ func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
 
 			if quality != "" {
 				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s | %s", camp.LastWindowIdx, lsName, quality)))
+			} else if hnm.UseHourlyWarningFlow {
+				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s", camp.LastCutoffWindowIdx, lsName)))
 			} else {
 				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s", camp.LastWindowIdx, lsName)))
 			}

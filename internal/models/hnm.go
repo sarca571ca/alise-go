@@ -169,7 +169,7 @@ var HNMs = map[string]HNM{
 		UseHourlyWarningFlow: true,
 		HQName:               "",
 		Emoji:                ":imp",
-		Note:                 gwNote(), // TBD
+		Note:                 toAHNote(), // TBD
 	},
 	"cerberus": {
 		ID:                   "cerberus",
@@ -182,7 +182,7 @@ var HNMs = map[string]HNM{
 		UseHourlyWarningFlow: true,
 		HQName:               "",
 		Emoji:                ":wolf:",
-		Note:                 gwNote(), // TBD
+		Note:                 toAHNote(), // TBD
 	},
 	"hydra": {
 		ID:                   "hydra",
@@ -195,7 +195,7 @@ var HNMs = map[string]HNM{
 		UseHourlyWarningFlow: true,
 		HQName:               "",
 		Emoji:                ":dragon::dragon::dragon:",
-		Note:                 gwNote(), // TBD
+		Note:                 toAHNote(), // TBD
 	},
 	// NOTE: The below are disable for now until we get propper spawn info
 	// "gulool":    {},
@@ -271,5 +271,14 @@ func kvNote() string {
 			"- [x-kill] present for the kill of KV\n" +
 			"*x-pop and x-claim are mutually exclusive*\n\n" +
 			"***If Earth Weather is up when the window opens KV will spawn***",
+	)
+}
+
+func toAHNote() string {
+	return fmt.Sprintf(
+		"- A valid hold party must be present for dkp.\n" +
+			"- Conditions for valid hold party are: Standard Tank party BRD, RDM, WHM\n" +
+			"- Windows will be opened 5-Minutes prior to window and closed 1-Minute after window.\n" +
+			"- Late x-in's won't be allowed due to the nature of this camp.",
 	)
 }

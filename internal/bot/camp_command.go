@@ -46,10 +46,16 @@ func (b *Bot) buildCampCommand(cfg config.Config) commands.Command {
 			)
 
 			if quality != "" {
+				if camp.LastWindowIdx != 0 {
+					_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s | %s", camp.LastWindowIdx+1, lsName, quality)))
+				}
 				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s | %s", camp.LastWindowIdx, lsName, quality)))
 			} else if hnm.UseHourlyWarningFlow {
-				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s", camp.LastCutoffWindowIdx, lsName)))
+				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s", camp.LastWarnedWindowIdx, lsName)))
 			} else {
+				if camp.LastWindowIdx != 0 {
+					_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s", camp.LastWindowIdx+1, lsName)))
+				}
 				_, _ = b.dg.ChannelMessageSend(i.ChannelID, formatting.FormatWindowHeading(fmt.Sprintf("POP: Window %d | %s", camp.LastWindowIdx, lsName)))
 			}
 			_, _ = b.dg.ChannelMessageSend(i.ChannelID, "Moving channel to awaiting-processing in 5 minutes.")

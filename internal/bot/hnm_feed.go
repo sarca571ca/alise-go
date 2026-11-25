@@ -2,17 +2,20 @@ package bot
 
 // HNM timer feed.
 //
-// Whenever the HNM Camp Timers board changes, the same list is also written as JSON to a GitHub
-// Gist, so a game addon (rsvp, for Ashita) can keep its timers up to date without anyone copying
-// the board out of Discord.
+// Whenever the HNM Camp Timers board changes, the same list is also written as JSON to a secret
+// GitHub Gist, so a game addon (rsvp, for Ashita) can keep its timers up to date without anyone
+// copying the board out of Discord.
 //
-// To turn it on, add two lines to .env and restart the bot:
+// To turn it on, add one line to .env and restart the bot:
 //
-//	FEED_GIST_ID=<the gist's id: the last part of its address>
-//	FEED_GIST_TOKEN=<a token that can write gists>
+//	FEED_GIST_TOKEN=<a GitHub token with the gist scope>
 //
-// FEED_GIST_FILE names the file in the gist (hnm.json when left out). With FEED_GIST_ID or
-// FEED_GIST_TOKEN missing, the feed is off and the bot works exactly as before.
+// The bot then makes a secret gist for the feed (or finds the one it made before) and posts the
+// gist's raw link to the bot log channel each time it starts. Without the token the feed is off
+// and the bot works exactly as before.
+//
+// Optional: FEED_GIST_ID writes to a gist you made yourself instead, and FEED_GIST_FILE names the
+// file in the gist (hnm.json when left out).
 //
 // The feed (times in unix seconds, sorted like the board; "day" only for the HNMs that can HQ,
 // "mod" only when the camp has one: d double DKP, t triple, a approximate):
@@ -29,9 +32,11 @@ package bot
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"sort"
 	"strings"
@@ -45,6 +50,9 @@ import (
 
 // gistAPI is GitHub's API address. A variable so the tests can use a local server instead.
 var gistAPI = "https://api.github.com"
+
+// feedGistDescription marks the gist the bot made, so it finds the same gist after a restart.
+const feedGistDescription = "Alise HNM timer feed (read by the rsvp addon)"
 
 type hnmFeedEntry struct {
 	Name     string `json:"name"`          // as the board shows it, e.g. "Behemoth/King Behemoth"
@@ -61,10 +69,31 @@ type hnmFeed struct {
 	HNMs    []hnmFeedEntry `json:"hnms"`
 }
 
+// gistInfo is the part of GitHub's answer about a gist that the feed uses.
+type gistInfo struct {
+	ID          string                     `json:"id"`
+	Description string                     `json:"description"`
+	Files       map[string]json.RawMessage `json:"files"`
+	Owner       struct {
+		Login string `json:"login"`
+	} `json:"owner"`
+}
+
+// rawLink is the address that always gives the newest version of the file.
+func (g gistInfo) rawLink(file string) string {
+	if g.Owner.Login == "" {
+		return "https://gist.github.com/" + g.ID
+	}
+
+	return "https://gist.githubusercontent.com/" + g.Owner.Login + "/" + g.ID + "/raw/" + file
+}
+
 var (
-	feedMu   sync.Mutex // one gist write at a time
-	feedSeq  int64      // counts the lists handed to publishHNMFeed; only the newest is written
-	feedHTTP = &http.Client{Timeout: 20 * time.Second}
+	feedMu     sync.Mutex // one gist write at a time; also guards feedGistID and feedLink
+	feedSeq    int64      // counts the lists handed to publishHNMFeed; only the newest is written
+	feedGistID string     // the gist in use, found or made on the first write
+	feedLink   string     // the raw link last posted to the log channel
+	feedHTTP   = &http.Client{Timeout: 20 * time.Second}
 )
 
 // buildHNMFeed turns the board's timers into the feed, with the names, days and order the board uses.
@@ -110,12 +139,11 @@ func buildHNMFeed(timers []models.HNMTimer, now time.Time) hnmFeed {
 
 // publishHNMFeed writes the timers to the gist. Call it as `go b.publishHNMFeed(timers)`, so a slow
 // GitHub never holds up the bot's reply to Discord (which has to come within 3 seconds). When two
-// updates overlap, only the newer list is written. Failures go to the bot's log channel.
+// updates overlap, only the newer list is written. The feed's link (once per start, or when it
+// changes) and any failures go to the bot's log channel.
 func (b *Bot) publishHNMFeed(timers []models.HNMTimer) {
-	gistID := strings.TrimSpace(os.Getenv("FEED_GIST_ID"))
 	token := strings.TrimSpace(os.Getenv("FEED_GIST_TOKEN"))
-
-	if gistID == "" || token == "" {
+	if token == "" {
 		return
 	}
 
@@ -123,6 +151,8 @@ func (b *Bot) publishHNMFeed(timers []models.HNMTimer) {
 	if file == "" {
 		file = "hnm.json"
 	}
+
+	fixedID := strings.TrimSpace(os.Getenv("FEED_GIST_ID"))
 
 	seq := atomic.AddInt64(&feedSeq, 1)
 	feed := buildHNMFeed(timers, time.Now())
@@ -134,8 +164,15 @@ func (b *Bot) publishHNMFeed(timers []models.HNMTimer) {
 		return // a newer list has been or will be written
 	}
 
-	if err := writeGistFile(gistID, token, file, feed); err != nil {
+	link, err := syncHNMFeed(token, file, fixedID, feed)
+	if err != nil {
 		b.logErrorMessage("HNMFeed", err)
+		return
+	}
+
+	if link != feedLink {
+		feedLink = link
+		b.logBasicMessage("HNMFeed", "The HNM timer feed is live. Its link for the rsvp addon: "+link)
 	}
 }
 
@@ -168,45 +205,165 @@ func (b *Bot) refreshHNMFeed() {
 	b.publishHNMFeed(timers)
 }
 
-// writeGistFile replaces one file of a gist with the feed.
-func writeGistFile(gistID, token, file string, feed hnmFeed) error {
+// syncHNMFeed writes the feed and returns the gist's raw link. On the first write it uses
+// fixedID when given, else the gist the bot made before, else it makes a new secret gist.
+// The caller holds feedMu.
+func syncHNMFeed(token, file, fixedID string, feed hnmFeed) (string, error) {
 	content, err := json.MarshalIndent(feed, "", "  ")
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	body, err := json.Marshal(map[string]any{
+	if fixedID != "" {
+		feedGistID = fixedID
+	}
+
+	if feedGistID == "" {
+		g, found, err := findFeedGist(token, file)
+		if err != nil {
+			return "", err
+		}
+
+		if !found {
+			g, err = createFeedGist(token, file, content)
+			if err != nil {
+				return "", err
+			}
+
+			feedGistID = g.ID
+
+			return g.rawLink(file), nil // made with the feed already in it
+		}
+
+		feedGistID = g.ID
+	}
+
+	g, status, err := writeGistFile(feedGistID, token, file, content)
+	if err != nil {
+		if status == http.StatusNotFound && fixedID == "" {
+			feedGistID = "" // the gist was deleted: find or make one on the next update
+		}
+
+		return "", err
+	}
+
+	return g.rawLink(file), nil
+}
+
+// findFeedGist looks through the token owner's gists for the one the bot made before.
+func findFeedGist(token, file string) (gistInfo, bool, error) {
+	const perPage = 100
+
+	for page := 1; page <= 30; page++ {
+		var list []gistInfo
+
+		path := fmt.Sprintf("/gists?per_page=%d&page=%d", perPage, page)
+		if _, err := callGistAPI(http.MethodGet, path, token, nil, &list); err != nil {
+			return gistInfo{}, false, fmt.Errorf("looking for the HNM feed gist: %w", err)
+		}
+
+		for _, g := range list {
+			if _, ok := g.Files[file]; ok && g.Description == feedGistDescription && g.ID != "" {
+				return g, true, nil
+			}
+		}
+
+		if len(list) < perPage {
+			break
+		}
+	}
+
+	return gistInfo{}, false, nil
+}
+
+// createFeedGist makes a new secret gist holding the feed.
+func createFeedGist(token, file string, content []byte) (gistInfo, error) {
+	var g gistInfo
+
+	_, err := callGistAPI(http.MethodPost, "/gists", token, map[string]any{
+		"description": feedGistDescription,
+		"public":      false,
 		"files": map[string]any{
 			file: map[string]string{"content": string(content)},
 		},
-	})
+	}, &g)
 	if err != nil {
-		return err
+		return g, fmt.Errorf("making the HNM feed gist: %w", err)
 	}
 
-	req, err := http.NewRequest(http.MethodPatch, gistAPI+"/gists/"+gistID, bytes.NewReader(body))
+	if g.ID == "" {
+		return g, errors.New("making the HNM feed gist: GitHub's answer had no gist id")
+	}
+
+	return g, nil
+}
+
+// writeGistFile replaces one file of a gist. It also returns the HTTP status, so a deleted gist
+// (404) can be told apart from other failures.
+func writeGistFile(gistID, token, file string, content []byte) (gistInfo, int, error) {
+	var g gistInfo
+
+	status, err := callGistAPI(http.MethodPatch, "/gists/"+url.PathEscape(gistID), token, map[string]any{
+		"files": map[string]any{
+			file: map[string]string{"content": string(content)},
+		},
+	}, &g)
 	if err != nil {
-		return err
+		return g, status, fmt.Errorf("updating the HNM feed gist: %w", err)
+	}
+
+	if g.ID == "" {
+		g.ID = gistID
+	}
+
+	return g, status, nil
+}
+
+// callGistAPI sends one request to GitHub's gist API and decodes the answer into out.
+func callGistAPI(method, path, token string, body, out any) (int, error) {
+	var payload io.Reader
+
+	if body != nil {
+		b, err := json.Marshal(body)
+		if err != nil {
+			return 0, err
+		}
+
+		payload = bytes.NewReader(b)
+	}
+
+	req, err := http.NewRequest(method, gistAPI+path, payload)
+	if err != nil {
+		return 0, err
 	}
 
 	req.Header.Set("Authorization", "Bearer "+token)
 	req.Header.Set("Accept", "application/vnd.github+json")
 	req.Header.Set("X-GitHub-Api-Version", "2022-11-28")
-	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("User-Agent", "alise-go-hnm-feed")
+
+	if body != nil {
+		req.Header.Set("Content-Type", "application/json")
+	}
 
 	res, err := feedHTTP.Do(req)
 	if err != nil {
-		return fmt.Errorf("updating the HNM feed gist: %w", err)
+		return 0, err
 	}
 	defer res.Body.Close()
 
-	if res.StatusCode != http.StatusOK {
+	if res.StatusCode < 200 || res.StatusCode > 299 {
 		msg, _ := io.ReadAll(io.LimitReader(res.Body, 300))
-		return fmt.Errorf("updating the HNM feed gist: GitHub answered %s: %s", res.Status, strings.TrimSpace(string(msg)))
+		return res.StatusCode, fmt.Errorf("GitHub answered %s: %s", res.Status, strings.TrimSpace(string(msg)))
+	}
+
+	if out != nil {
+		if err := json.NewDecoder(io.LimitReader(res.Body, 8<<20)).Decode(out); err != nil {
+			return res.StatusCode, fmt.Errorf("reading GitHub's answer: %w", err)
+		}
 	}
 
 	_, _ = io.Copy(io.Discard, res.Body)
 
-	return nil
+	return res.StatusCode, nil
 }

@@ -83,6 +83,8 @@ func (b *Bot) Start(ctx context.Context) error {
 		return err
 	}
 
+	go b.refreshHNMFeed() // fill the HNM timer feed from the saved timers (hnm_feed.go)
+
 	stop := make(chan struct{})
 	b.hnm.StartPolling(stop)
 	b.camp.StartPolling(stop)

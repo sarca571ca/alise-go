@@ -65,6 +65,8 @@ func buildHNMTimerBoardEmbed(timers []models.HNMTimer) *discordgo.MessageEmbed {
 }
 
 func (b *Bot) updateHNMTimerBoard(guildID string, timers []models.HNMTimer) error {
+	go b.publishHNMFeed(timers) // also write the HNM timer feed (hnm_feed.go)
+
 	channelID := b.cfg.Channels.HNMTimes
 	if channelID == "" {
 		return nil
